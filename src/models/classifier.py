@@ -7,7 +7,8 @@ and model persistence.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
+
 import joblib
 import lightgbm as lgb
 import numpy as np
@@ -16,9 +17,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     average_precision_score,
     brier_score_loss,
-    classification_report,
     f1_score,
-    precision_recall_curve,
     roc_auc_score,
 )
 from sklearn.model_selection import StratifiedKFold
@@ -28,18 +27,19 @@ from sklearn.preprocessing import StandardScaler
 @dataclass
 class CVResult:
     """Holds cross-validation results across folds."""
+
     mean_roc_auc: float
     std_roc_auc: float
     mean_pr_auc: float
     std_pr_auc: float
     mean_f1: float
     mean_brier: float
-    fold_results: List[Dict[str, float]]
+    fold_results: list[dict[str, float]]
     feature_importances: pd.DataFrame
 
 
 class SellerRiskClassifier:
-    """Trains, tunes, and evaluates models for predicting seller risk."""
+    """Trains and cross-validates models against the retrospective seller-state label."""
 
     def __init__(self, random_state: int = 42):
         self.random_state = random_state
@@ -52,7 +52,9 @@ class SellerRiskClassifier:
         self, X: pd.DataFrame, y: pd.Series, n_splits: int = 5
     ) -> CVResult:
         """Evaluates Logistic Regression baseline using Stratified K-Fold."""
-        skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=self.random_state)
+        skf = StratifiedKFold(
+            n_splits=n_splits, shuffle=True, random_state=self.random_state
+        )
         roc_aucs, pr_aucs, f1s, briers = [], [], [], []
         fold_details = []
 
@@ -68,7 +70,9 @@ class SellerRiskClassifier:
             X_tr_s = scaler.fit_transform(X_tr)
             X_va_s = scaler.transform(X_va)
 
-            lr = LogisticRegression(class_weight="balanced", random_state=self.random_state, max_iter=1000)
+            lr = LogisticRegression(
+                class_weight="balanced", random_state=self.random_state, max_iter=1000
+            )
             lr.fit(X_tr_s, y_tr)
 
             probs = lr.predict_proba(X_va_s)[:, 1]
@@ -83,12 +87,22 @@ class SellerRiskClassifier:
             pr_aucs.append(pr)
             f1s.append(f1)
             briers.append(brier)
-            fold_details.append({"fold": fold + 1, "roc_auc": roc, "pr_auc": pr, "f1": f1, "brier": brier})
+            fold_details.append(
+                {
+                    "fold": fold + 1,
+                    "roc_auc": roc,
+                    "pr_auc": pr,
+                    "f1": f1,
+                    "brier": brier,
+                }
+            )
 
-        coef_df = pd.DataFrame({
-            "feature": self.feature_names,
-            "importance": np.abs(lr.coef_[0]),
-        }).sort_values("importance", ascending=False)
+        coef_df = pd.DataFrame(
+            {
+                "feature": self.feature_names,
+                "importance": np.abs(lr.coef_[0]),
+            }
+        ).sort_values("importance", ascending=False)
 
         return CVResult(
             mean_roc_auc=float(np.mean(roc_aucs)),
@@ -106,8 +120,8 @@ class SellerRiskClassifier:
         X: pd.DataFrame,
         y: pd.Series,
         n_splits: int = 5,
-        params: Dict[str, Any] = None,
-    ) -> Tuple[CVResult, lgb.LGBMClassifier]:
+        params: dict[str, Any] | None = None,
+    ) -> tuple[CVResult, lgb.LGBMClassifier]:
         """Trains and evaluates Champion LightGBM with Stratified K-Fold."""
         if params is None:
             params = {
@@ -123,7 +137,9 @@ class SellerRiskClassifier:
                 "verbose": -1,
             }
 
-        skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=self.random_state)
+        skf = StratifiedKFold(
+            n_splits=n_splits, shuffle=True, random_state=self.random_state
+        )
         roc_aucs, pr_aucs, f1s, briers = [], [], [], []
         fold_details = []
         importances = np.zeros(X.shape[1])
@@ -152,17 +168,27 @@ class SellerRiskClassifier:
             f1s.append(f1)
             briers.append(brier)
             importances += clf.feature_importances_ / n_splits
-            fold_details.append({"fold": fold + 1, "roc_auc": roc, "pr_auc": pr, "f1": f1, "brier": brier})
+            fold_details.append(
+                {
+                    "fold": fold + 1,
+                    "roc_auc": roc,
+                    "pr_auc": pr,
+                    "f1": f1,
+                    "brier": brier,
+                }
+            )
 
         # Fit final model on full dataset
         final_clf = lgb.LGBMClassifier(**params)
         final_clf.fit(X_mat, y_mat)
         self.champion_model = final_clf
 
-        imp_df = pd.DataFrame({
-            "feature": self.feature_names,
-            "importance": importances,
-        }).sort_values("importance", ascending=False)
+        imp_df = pd.DataFrame(
+            {
+                "feature": self.feature_names,
+                "importance": importances,
+            }
+        ).sort_values("importance", ascending=False)
 
         cv_res = CVResult(
             mean_roc_auc=float(np.mean(roc_aucs)),

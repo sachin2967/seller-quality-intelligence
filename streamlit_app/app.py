@@ -1,9 +1,9 @@
 """Interactive Streamlit dashboard for Category Managers and Merchant Operations teams."""
 
 from pathlib import Path
+
 import joblib
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -36,8 +36,10 @@ def load_models():
 try:
     df = load_seller_data()
     model, feature_names, explainer = load_models()
-except Exception as e:
-    st.error(f"Error loading artifacts: {e}. Please ensure `scripts/train_and_evaluate.py` has run.")
+except (FileNotFoundError, OSError, EOFError, KeyError, pd.errors.EmptyDataError) as e:
+    st.error(
+        f"Error loading artifacts: {e}. Please ensure `scripts/train_and_evaluate.py` has run."
+    )
     st.stop()
 
 # Compute live risk probabilities
@@ -62,8 +64,13 @@ df["segment"] = [assign_segment(p) for p in probs]
 # --- UI HEADER ---
 st.title("🛒 E-Commerce Seller Quality & Performance Intelligence")
 st.markdown(
-    "**Business Problem:** Proactively predict marketplace seller SLA degradation, "
-    "diagnose root-cause logistics bottlenecks, and prescribe targeted merchant interventions."
+    "**Offline prototype:** Explore retrospective seller-condition scores, logistics diagnostics, "
+    "and heuristic operations playbooks. Scores are not validated for future-risk decisions."
+)
+st.warning(
+    "Evaluation limitation: seller features and rule-derived labels use overlapping full histories. "
+    "Cross-validation measures retrospective label reconstruction, not early-warning performance. "
+    "No causal or financial impact has been established."
 )
 
 st.divider()
@@ -78,7 +85,12 @@ avg_review = df["mean_review_score"].mean()
 avg_late = df["late_delivery_rate"].mean() * 100
 
 col1.metric("Active Sellers", f"{total_sellers:,}")
-col2.metric("At-Risk Sellers", f"{at_risk_count:,}", f"{at_risk_pct:.1f}% of total", delta_color="inverse")
+col2.metric(
+    "At-Risk Sellers",
+    f"{at_risk_count:,}",
+    f"{at_risk_pct:.1f}% of total",
+    delta_color="inverse",
+)
 col3.metric("Avg Seller GMV", f"₹{avg_gmv:,.0f}")
 col4.metric("Avg Review Score", f"{avg_review:.2f} / 5.0")
 col5.metric("Avg Late Delivery Rate", f"{avg_late:.1f}%")
@@ -86,7 +98,13 @@ col5.metric("Avg Late Delivery Rate", f"{avg_late:.1f}%")
 st.divider()
 
 # --- MAIN DASHBOARD LAYOUT ---
-tab1, tab2, tab3 = st.tabs(["📊 Marketplace Portfolio Overview", "🔍 Seller Deep Dive & Interventions", "📈 Model Benchmarks"])
+tab1, tab2, tab3 = st.tabs(
+    [
+        "📊 Marketplace Portfolio Overview",
+        "🔍 Seller Deep Dive & Interventions",
+        "📈 Model Benchmarks",
+    ]
+)
 
 with tab1:
     st.subheader("Marketplace Risk & Commercial Value Matrix")
@@ -94,7 +112,12 @@ with tab1:
     # Segment filter
     selected_segments = st.multiselect(
         "Filter by Risk Segment:",
-        options=["Elite / Low Risk", "Good / Stable", "At-Risk / Watchlist", "Critical / Severe Risk"],
+        options=[
+            "Elite / Low Risk",
+            "Good / Stable",
+            "At-Risk / Watchlist",
+            "Critical / Severe Risk",
+        ],
         default=["Critical / Severe Risk", "At-Risk / Watchlist"],
     )
 
@@ -110,7 +133,15 @@ with tab1:
 
     for seg in filtered_df["segment"].unique():
         sub = filtered_df[filtered_df["segment"] == seg]
-        ax.scatter(sub["total_gmv"], sub["quality_score"], label=seg, color=colors.get(seg, "gray"), alpha=0.7, edgecolors="none", s=40)
+        ax.scatter(
+            sub["total_gmv"],
+            sub["quality_score"],
+            label=seg,
+            color=colors.get(seg, "gray"),
+            alpha=0.7,
+            edgecolors="none",
+            s=40,
+        )
 
     ax.set_xscale("log")
     ax.set_xlabel("Total GMV (Log Scale)")
@@ -121,7 +152,18 @@ with tab1:
     st.pyplot(fig)
 
     st.dataframe(
-        filtered_df[["seller_id", "segment", "risk_prob", "quality_score", "total_gmv", "late_delivery_rate", "mean_review_score"]].rename(
+        filtered_df[
+            [
+                "seller_id",
+                "segment",
+                "risk_prob",
+                "quality_score",
+                "total_gmv",
+                "late_delivery_rate",
+                "mean_review_score",
+            ]
+        ]
+        .rename(
             columns={
                 "seller_id": "Seller ID",
                 "segment": "Risk Segment",
@@ -131,7 +173,8 @@ with tab1:
                 "late_delivery_rate": "Late Rate",
                 "mean_review_score": "Review",
             }
-        ).sort_values("Risk Prob", ascending=False),
+        )
+        .sort_values("Risk Prob", ascending=False),
         use_container_width=True,
     )
 
@@ -139,7 +182,9 @@ with tab2:
     st.subheader("Individual Merchant Diagnosis & Prescribed Playbook")
 
     seller_ids = df["seller_id"].tolist()
-    selected_seller = st.selectbox("Select Seller ID to Inspect:", options=seller_ids, index=0)
+    selected_seller = st.selectbox(
+        "Select Seller ID to Inspect:", options=seller_ids, index=0
+    )
 
     s_row = df[df["seller_id"] == selected_seller].iloc[0]
     explanation = explainer.explain_seller(s_row)
@@ -149,11 +194,14 @@ with tab2:
     with d_col1:
         st.markdown(f"### Seller Profile: `{selected_seller[:12]}...`")
         st.write(f"**Segment:** {s_row['segment']}")
-        st.progress(float(s_row["risk_prob"]), text=f"Risk Probability: {s_row['risk_prob']*100:.1f}%")
+        st.progress(
+            float(s_row["risk_prob"]),
+            text=f"Risk Probability: {s_row['risk_prob'] * 100:.1f}%",
+        )
 
         m1, m2 = st.columns(2)
         m1.metric("Historical Review", f"{s_row['mean_review_score']:.2f} / 5.0")
-        m2.metric("Late Delivery %", f"{s_row['late_delivery_rate']*100:.1f}%")
+        m2.metric("Late Delivery %", f"{s_row['late_delivery_rate'] * 100:.1f}%")
 
         m3, m4 = st.columns(2)
         m3.metric("Carrier Handoff Delay", f"{s_row['avg_carrier_handoff']:.1f} days")
@@ -176,16 +224,21 @@ with tab2:
         st.markdown("#### Top Root-Cause Risk Drivers:")
         if explanation["drivers"]:
             for d in explanation["drivers"]:
-                st.markdown(f"- **{d['factor']}**: `{d['value']}` (Benchmark: *{d['benchmark']}*) [Severity: **{d['severity']}**]")
+                st.markdown(
+                    f"- **{d['factor']}**: `{d['value']}` (Benchmark: *{d['benchmark']}*) [Severity: **{d['severity']}**]"
+                )
         else:
-            st.write("No severe negative drivers detected. Healthy merchant operations.")
+            st.write(
+                "No severe negative drivers detected. Healthy merchant operations."
+            )
 
 with tab3:
-    st.subheader("Model Validation & Offline Performance")
+    st.subheader("Retrospective Offline Evaluation")
 
     benchmark_json = PROJECT_ROOT / "benchmark_report.json"
     if benchmark_json.exists():
         import json
+
         with open(benchmark_json) as f:
             b_data = json.load(f)
 
@@ -193,33 +246,40 @@ with tab3:
         lr = m_data.get("baseline_logistic_regression", {})
         lgb = m_data.get("champion_lightgbm", {})
 
-        st.markdown("### 5-Fold Stratified Cross-Validation Comparison")
-        comp_df = pd.DataFrame({
-            "Metric": ["ROC-AUC", "PR-AUC", "F1-Score", "Brier Score (Calibration)"],
-            "Baseline (Logistic Regression)": [
-                f"{lr.get('roc_auc', 0):.4f}",
-                f"{lr.get('pr_auc', 0):.4f}",
-                f"{lr.get('f1_score', 0):.4f}",
-                f"{lr.get('brier_score', 0):.4f}",
-            ],
-            "Champion (LightGBM)": [
-                f"{lgb.get('roc_auc', 0):.4f}",
-                f"{lgb.get('pr_auc', 0):.4f}",
-                f"{lgb.get('f1_score', 0):.4f}",
-                f"{lgb.get('brier_score', 0):.4f}",
-            ],
-            "Improvement": [
-                f"+{(lgb.get('roc_auc',0) - lr.get('roc_auc',0))*100:.2f}%",
-                f"+{(lgb.get('pr_auc',0) - lr.get('pr_auc',0))*100:.2f}%",
-                f"+{(lgb.get('f1_score',0) - lr.get('f1_score',0))*100:.2f}%",
-                f"{(lgb.get('brier_score',0) - lr.get('brier_score',0))*100:.2f}% (better)",
-            ],
-        })
+        scope = b_data.get("evaluation_scope", {})
+        st.info(f"Classification scope: {scope.get('classification', 'not specified')}")
+        st.markdown("### 5-Fold Stratified Seller Cross-Validation")
+        comp_df = pd.DataFrame(
+            {
+                "Metric": [
+                    "ROC-AUC",
+                    "PR-AUC",
+                    "F1-Score",
+                    "Brier Score (Calibration)",
+                ],
+                "Baseline (Logistic Regression)": [
+                    f"{lr.get('roc_auc', 0):.4f}",
+                    f"{lr.get('pr_auc', 0):.4f}",
+                    f"{lr.get('f1_score', 0):.4f}",
+                    f"{lr.get('brier_score', 0):.4f}",
+                ],
+                "Champion (LightGBM)": [
+                    f"{lgb.get('roc_auc', 0):.4f}",
+                    f"{lgb.get('pr_auc', 0):.4f}",
+                    f"{lgb.get('f1_score', 0):.4f}",
+                    f"{lgb.get('brier_score', 0):.4f}",
+                ],
+                "Improvement": [
+                    f"+{(lgb.get('roc_auc', 0) - lr.get('roc_auc', 0)) * 100:.2f}%",
+                    f"+{(lgb.get('pr_auc', 0) - lr.get('pr_auc', 0)) * 100:.2f}%",
+                    f"+{(lgb.get('f1_score', 0) - lr.get('f1_score', 0)) * 100:.2f}%",
+                    f"{(lgb.get('brier_score', 0) - lr.get('brier_score', 0)) * 100:.2f}% (better)",
+                ],
+            }
+        )
         st.table(comp_df)
 
-        fin = b_data.get("financial_impact", {})
-        st.markdown("### Financial ROI & Business Cost-Benefit Analysis")
-        f1, f2, f3 = st.columns(3)
-        f1.metric("Precision @ Top 10% Flagged", f"{fin.get('precision_at_top_10pct', 0)*100:.1f}%")
-        f2.metric("Net Financial Value Generated", f"₹{fin.get('model_net_value', 0):,.2f}")
-        f3.metric("Incremental Savings vs Naive", f"₹{fin.get('incremental_roi_value', 0):,.2f}")
+        st.caption(
+            "These metrics describe retrospective reconstruction of a rule-derived label. "
+            "They do not estimate future prediction quality, intervention benefit, or ROI."
+        )

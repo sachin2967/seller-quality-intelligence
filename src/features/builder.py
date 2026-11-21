@@ -5,7 +5,6 @@ computes RFM velocity, SLA breach rates, sentiment indicators, and constructs
 both classification and survival analysis target labels.
 """
 
-from typing import Tuple
 import numpy as np
 import pandas as pd
 
@@ -27,7 +26,7 @@ class SellerFeatureBuilder:
             item_df: Joined DataFrame output from DataLoader.build_joined_item_level_dataset()
 
         Returns:
-            DataFrame with one row per seller and 20+ predictive features + targets.
+            DataFrame with one row per seller and full-history aggregate features + retrospective targets.
         """
         # Ensure chronological ordering
         df = item_df.sort_values("order_purchase_timestamp").copy()
@@ -55,10 +54,26 @@ class SellerFeatureBuilder:
             # Delivery & SLA features
             late_mask = group["is_late_delivery"] == 1.0
             late_delivery_rate = late_mask.mean()
-            avg_delivery_delay = group["delivery_delay_days"].dropna().mean() if not group["delivery_delay_days"].dropna().empty else 0.0
-            max_delivery_delay = group["delivery_delay_days"].dropna().max() if not group["delivery_delay_days"].dropna().empty else 0.0
-            avg_transit_days = group["transit_days"].dropna().mean() if not group["transit_days"].dropna().empty else 0.0
-            avg_carrier_handoff = group["carrier_handoff_days"].dropna().mean() if not group["carrier_handoff_days"].dropna().empty else 0.0
+            avg_delivery_delay = (
+                group["delivery_delay_days"].dropna().mean()
+                if not group["delivery_delay_days"].dropna().empty
+                else 0.0
+            )
+            max_delivery_delay = (
+                group["delivery_delay_days"].dropna().max()
+                if not group["delivery_delay_days"].dropna().empty
+                else 0.0
+            )
+            avg_transit_days = (
+                group["transit_days"].dropna().mean()
+                if not group["transit_days"].dropna().empty
+                else 0.0
+            )
+            avg_carrier_handoff = (
+                group["carrier_handoff_days"].dropna().mean()
+                if not group["carrier_handoff_days"].dropna().empty
+                else 0.0
+            )
 
             # Quality & Review features
             reviews = group["review_score"].dropna()
@@ -78,11 +93,15 @@ class SellerFeatureBuilder:
             orders_per_month = (unique_orders / max(tenure_days, 1.0)) * 30.0
 
             # Survival Analysis targets: Time to first severe degradation (1-star review or >5d delay)
-            breach_events = group[(group["review_score"] == 1.0) | (group["delivery_delay_days"] > 5.0)]
+            breach_events = group[
+                (group["review_score"] == 1.0) | (group["delivery_delay_days"] > 5.0)
+            ]
             if not breach_events.empty:
                 event_occurred = 1
                 first_breach_time = breach_events["order_purchase_timestamp"].min()
-                time_to_breach_days = max((first_breach_time - first_order).total_seconds() / 86400.0, 0.5)
+                time_to_breach_days = max(
+                    (first_breach_time - first_order).total_seconds() / 86400.0, 0.5
+                )
             else:
                 event_occurred = 0
                 time_to_breach_days = tenure_days
@@ -90,7 +109,9 @@ class SellerFeatureBuilder:
             # Classification target: At-Risk seller definition
             # A seller is classified as 'At-Risk' if their mean review < 3.8 OR late rate > 15% OR cancellation > 5%
             is_at_risk = int(
-                (mean_review < 3.8) or (late_delivery_rate > 0.15) or (cancellation_rate > 0.05)
+                (mean_review < 3.8)
+                or (late_delivery_rate > 0.15)
+                or (cancellation_rate > 0.05)
             )
 
             # Composite Seller Quality Score (0-100)
@@ -98,44 +119,48 @@ class SellerFeatureBuilder:
             review_component = np.clip((mean_review - 1.0) / 4.0, 0.0, 1.0) * 40.0
             ontime_component = np.clip(1.0 - late_delivery_rate, 0.0, 1.0) * 40.0
             volume_component = np.clip(np.log1p(total_gmv) / 10.0, 0.0, 1.0) * 20.0
-            quality_score = round(review_component + ontime_component + volume_component, 1)
+            quality_score = round(
+                review_component + ontime_component + volume_component, 1
+            )
 
-            features_list.append({
-                "seller_id": seller_id,
-                "total_gmv": total_gmv,
-                "total_items": total_items,
-                "unique_orders": unique_orders,
-                "unique_products": unique_products,
-                "avg_item_price": avg_item_price,
-                "std_item_price": std_item_price,
-                "avg_freight": avg_freight,
-                "freight_ratio": freight_ratio,
-                "late_delivery_rate": late_delivery_rate,
-                "avg_delivery_delay": avg_delivery_delay,
-                "max_delivery_delay": max_delivery_delay,
-                "avg_transit_days": avg_transit_days,
-                "avg_carrier_handoff": avg_carrier_handoff,
-                "mean_review_score": mean_review,
-                "one_star_rate": one_star_rate,
-                "five_star_rate": five_star_rate,
-                "has_comment_rate": has_comment_rate,
-                "cancellation_rate": cancellation_rate,
-                "tenure_days": tenure_days,
-                "orders_per_month": orders_per_month,
-                "quality_score": quality_score,
-                # Survival targets
-                "survival_duration": time_to_breach_days,
-                "survival_event": event_occurred,
-                # Classification target
-                "is_at_risk": is_at_risk,
-            })
+            features_list.append(
+                {
+                    "seller_id": seller_id,
+                    "total_gmv": total_gmv,
+                    "total_items": total_items,
+                    "unique_orders": unique_orders,
+                    "unique_products": unique_products,
+                    "avg_item_price": avg_item_price,
+                    "std_item_price": std_item_price,
+                    "avg_freight": avg_freight,
+                    "freight_ratio": freight_ratio,
+                    "late_delivery_rate": late_delivery_rate,
+                    "avg_delivery_delay": avg_delivery_delay,
+                    "max_delivery_delay": max_delivery_delay,
+                    "avg_transit_days": avg_transit_days,
+                    "avg_carrier_handoff": avg_carrier_handoff,
+                    "mean_review_score": mean_review,
+                    "one_star_rate": one_star_rate,
+                    "five_star_rate": five_star_rate,
+                    "has_comment_rate": has_comment_rate,
+                    "cancellation_rate": cancellation_rate,
+                    "tenure_days": tenure_days,
+                    "orders_per_month": orders_per_month,
+                    "quality_score": quality_score,
+                    # Survival targets
+                    "survival_duration": time_to_breach_days,
+                    "survival_event": event_occurred,
+                    # Classification target
+                    "is_at_risk": is_at_risk,
+                }
+            )
 
         seller_df = pd.DataFrame(features_list)
         return seller_df
 
     def get_feature_matrix(
         self, seller_df: pd.DataFrame
-    ) -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
+    ) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
         """Separates features, classification target, and survival target.
 
         Returns:

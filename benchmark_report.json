@@ -21,18 +21,19 @@
     },
     "survival_cox_ph": {
       "concordance_index": 0.7063397810766232,
-      "events_observed": 526
+      "events_observed": 526,
+      "evaluation_scope": "apparent_in_sample_full_history_association_only"
     }
   },
-  "financial_impact": {
-    "true_positives": 388,
-    "false_positives": 11,
-    "false_negatives": 13,
-    "true_negatives": 692,
-    "model_net_value": 152330.0,
-    "naive_net_value": -300750.0,
-    "incremental_roi_value": 453080.0,
-    "precision_at_top_10pct": 1.0,
-    "precision_at_top_20pct": 1.0
+  "evaluation_scope": {
+    "classification": "stratified_random_seller_cv_on_retrospective_full_history_rule_label",
+    "prospective_prediction_validated": false,
+    "financial_impact_validated": false,
+    "limitations": [
+      "features and labels summarize overlapping seller histories",
+      "cross-validation does not simulate prediction at a historical cutoff",
+      "survival concordance is apparent in-sample and is not a held-out estimate",
+      "no intervention experiment supports causal savings or ROI claims"
+    ]
   }
 }

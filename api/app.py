@@ -1,16 +1,15 @@
-"""FastAPI production microservice for Seller Quality Intelligence.
+"""FastAPI demonstration service for the Seller Quality Intelligence prototype.
 
-Exposes real-time scoring, individual seller risk lookups, survival forecasts,
+Exposes retrospective demo scoring, individual seller lookups, survival estimates,
 and merchant operations interventions.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+
 import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-
 
 # Paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -20,7 +19,7 @@ DATA_DIR = PROJECT_ROOT / "data" / "processed"
 # Initialize FastAPI App
 app = FastAPI(
     title="Seller Quality & Risk Intelligence API",
-    description="Production ML service for predicting e-commerce seller SLA degradation and survival hazard.",
+    description="Offline prototype API for retrospective seller diagnostics; scores are not validated for prospective decisions.",
     version="1.0.0",
 )
 
@@ -37,29 +36,80 @@ try:
     seller_db = pd.read_csv(DATA_DIR / "seller_features.csv")
     seller_db.set_index("seller_id", inplace=True, drop=False)
     print("✅ All ML models and seller database loaded successfully.")
-except Exception as e:
+except (FileNotFoundError, OSError, EOFError, KeyError, pd.errors.EmptyDataError) as e:
     print(f"⚠️ Warning during artifact load: {e}")
     champion_model = None
     seller_db = None
 
 
 class SellerMetricsInput(BaseModel):
-    """Raw seller features for real-time scoring."""
-    total_gmv: float = Field(..., example=4500.0, description="Total GMV in currency")
-    total_items: int = Field(..., example=25, description="Total items sold")
-    unique_orders: int = Field(..., example=20, description="Unique orders fulfilled")
-    unique_products: int = Field(..., example=8, description="Distinct product SKUs")
-    avg_item_price: float = Field(..., example=180.0, description="Average item selling price")
-    std_item_price: float = Field(..., example=45.0, description="Standard deviation of item price")
-    avg_freight: float = Field(..., example=22.0, description="Average shipping freight cost")
-    freight_ratio: float = Field(..., example=0.15, description="Freight to GMV ratio")
-    avg_delivery_delay: float = Field(..., example=1.5, description="Average delivery delay in days")
-    max_delivery_delay: float = Field(..., example=4.0, description="Max delivery delay in days")
-    avg_transit_days: float = Field(..., example=10.5, description="Average total transit days")
-    avg_carrier_handoff: float = Field(..., example=2.1, description="Carrier handoff delay in days")
-    has_comment_rate: float = Field(..., example=0.45, description="Proportion of orders with written review")
-    tenure_days: float = Field(..., example=180.0, description="Days since first seller order")
-    orders_per_month: float = Field(..., example=3.5, description="Fulfillment velocity per month")
+    """Raw seller features for retrospective demonstration scoring."""
+
+    total_gmv: float = Field(
+        ..., json_schema_extra={"example": 4500.0}, description="Total GMV in currency"
+    )
+    total_items: int = Field(
+        ..., json_schema_extra={"example": 25}, description="Total items sold"
+    )
+    unique_orders: int = Field(
+        ..., json_schema_extra={"example": 20}, description="Unique orders fulfilled"
+    )
+    unique_products: int = Field(
+        ..., json_schema_extra={"example": 8}, description="Distinct product SKUs"
+    )
+    avg_item_price: float = Field(
+        ...,
+        json_schema_extra={"example": 180.0},
+        description="Average item selling price",
+    )
+    std_item_price: float = Field(
+        ...,
+        json_schema_extra={"example": 45.0},
+        description="Standard deviation of item price",
+    )
+    avg_freight: float = Field(
+        ...,
+        json_schema_extra={"example": 22.0},
+        description="Average shipping freight cost",
+    )
+    freight_ratio: float = Field(
+        ..., json_schema_extra={"example": 0.15}, description="Freight to GMV ratio"
+    )
+    avg_delivery_delay: float = Field(
+        ...,
+        json_schema_extra={"example": 1.5},
+        description="Average delivery delay in days",
+    )
+    max_delivery_delay: float = Field(
+        ...,
+        json_schema_extra={"example": 4.0},
+        description="Max delivery delay in days",
+    )
+    avg_transit_days: float = Field(
+        ...,
+        json_schema_extra={"example": 10.5},
+        description="Average total transit days",
+    )
+    avg_carrier_handoff: float = Field(
+        ...,
+        json_schema_extra={"example": 2.1},
+        description="Carrier handoff delay in days",
+    )
+    has_comment_rate: float = Field(
+        ...,
+        json_schema_extra={"example": 0.45},
+        description="Proportion of orders with written review",
+    )
+    tenure_days: float = Field(
+        ...,
+        json_schema_extra={"example": 180.0},
+        description="Days since first seller order",
+    )
+    orders_per_month: float = Field(
+        ...,
+        json_schema_extra={"example": 3.5},
+        description="Fulfillment velocity per month",
+    )
 
 
 @app.get("/health")
@@ -134,7 +184,7 @@ def score_seller_realtime(data: SellerMetricsInput):
     if champion_model is None:
         raise HTTPException(status_code=503, detail="Model artifact unavailable.")
 
-    input_dict = data.dict()
+    input_dict = data.model_dump()
     X_vals = [input_dict[f] for f in feature_names]
     prob = float(champion_model.predict_proba([X_vals])[0, 1])
 

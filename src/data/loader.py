@@ -77,7 +77,7 @@ class DataLoader:
         # Step 2: Deduplicate reviews at order level (take the first review per order_id)
         dedup_reviews = reviews.sort_values("review_answer_timestamp").drop_duplicates(
             subset=["order_id"], keep="last"
-        )[["order_id", "review_score", "review_comment_message"]]
+        )[["order_id", "review_score", "review_comment_message", "review_answer_timestamp"]]
 
         # Step 3: Join items with orders (Inner join: we need order metadata for every item)
         items_with_orders = items.merge(

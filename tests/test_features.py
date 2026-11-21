@@ -1,7 +1,9 @@
 """Unit tests for the seller feature builder and target definition."""
 
 from pathlib import Path
+
 import pytest
+
 from src.data.loader import DataLoader, RawDataConfig
 from src.features.builder import SellerFeatureBuilder
 

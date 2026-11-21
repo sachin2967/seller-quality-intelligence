@@ -1,11 +1,12 @@
 """Unit tests for model inference, survival prediction, and explainability."""
 
 from pathlib import Path
+
 import joblib
 import pytest
+
 from src.models.classifier import SellerRiskClassifier
 from src.models.survival import SellerSurvivalModel
-from src.models.explainability import SellerExplainer
 
 
 @pytest.fixture
@@ -48,4 +49,9 @@ def test_explainer_prescriptions(models_dir):
     explanation = explainer.explain_seller(sample_seller)
     assert "drivers" in explanation
     assert "recommended_action" in explanation
-    assert explanation["recommended_action"]["urgency"] in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+    assert explanation["recommended_action"]["urgency"] in [
+        "CRITICAL",
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+    ]

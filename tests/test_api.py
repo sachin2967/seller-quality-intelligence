@@ -1,7 +1,8 @@
 """FastAPI microservice integration and route tests using TestClient."""
 
 from fastapi.testclient import TestClient
-from api.app import app, feature_names
+
+from api.app import app
 
 client = TestClient(app)
 
