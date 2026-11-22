@@ -1,57 +1,94 @@
-"""Unit tests for model inference, survival prediction, and explainability."""
-
-from pathlib import Path
+"""Real serialization round trips on small authored synthetic training fixtures."""
 
 import joblib
+import numpy as np
+import pandas as pd
 import pytest
 
 from src.models.classifier import SellerRiskClassifier
+from src.models.explainability import SellerExplainer
 from src.models.survival import SellerSurvivalModel
 
 
-@pytest.fixture
-def models_dir():
-    return Path(__file__).resolve().parent.parent / "models"
-
-
-def test_classifier_artifact_loading(models_dir):
-    clf_path = models_dir / "lgbm_seller_risk.joblib"
-    assert clf_path.exists()
-
-    clf = SellerRiskClassifier.load(clf_path)
-    assert clf.champion_model is not None
-    assert len(clf.feature_names) > 0
-
-
-def test_survival_model_artifact_loading(models_dir):
-    surv_path = models_dir / "seller_survival_cox.joblib"
-    assert surv_path.exists()
-
-    surv = SellerSurvivalModel.load(str(surv_path))
-    assert surv.cph is not None
-    hazard_df = surv.get_hazard_ratios()
-    assert not hazard_df.empty
-    assert "hazard_ratio" in hazard_df.columns
-
-
-def test_explainer_prescriptions(models_dir):
-    exp_path = models_dir / "seller_explainer.joblib"
-    assert exp_path.exists()
-
-    explainer = joblib.load(exp_path)
-    sample_seller = {
-        "seller_id": "test_seller_1",
-        "avg_delivery_delay": 8.5,
-        "avg_carrier_handoff": 4.2,
-        "freight_ratio": 0.40,
-        "orders_per_month": 1.0,
+@pytest.fixture(scope="module")
+def artifacts(tmp_path_factory):
+    directory = tmp_path_factory.mktemp("seller-model-contracts")
+    rng = np.random.default_rng(42)
+    features = pd.DataFrame(
+        {
+            "avg_delivery_delay": rng.normal(2, 1, 60),
+            "freight_ratio": rng.uniform(0.1, 0.5, 60),
+            "orders_per_month": rng.uniform(1, 10, 60),
+        }
+    )
+    labels = (
+        features["avg_delivery_delay"] > features["avg_delivery_delay"].median()
+    ).astype(int)
+    classifier = SellerRiskClassifier()
+    classifier.train_champion_lgbm(
+        features,
+        labels,
+        n_splits=2,
+        params={
+            "n_estimators": 8,
+            "num_leaves": 4,
+            "min_child_samples": 2,
+            "random_state": 42,
+            "n_jobs": 1,
+            "verbosity": -1,
+        },
+    )
+    classifier.save(directory / "classifier.joblib")
+    survival = SellerSurvivalModel(penalizer=0.2)
+    durations = pd.Series(rng.exponential(20, 60) + 1)
+    events = pd.Series(rng.binomial(1, 0.7, 60))
+    survival.fit_cox_ph(features, durations, events)
+    survival.save(str(directory / "survival.joblib"))
+    explainer = SellerExplainer()
+    explainer.fit_reference(features)
+    joblib.dump(explainer, directory / "explainer.joblib")
+    return {
+        "directory": directory,
+        "features": features,
+        "scores": classifier.champion_model.predict_proba(features),
+        "survival": survival.predict_survival_probability(features, times=[5, 10]),
     }
-    explanation = explainer.explain_seller(sample_seller)
-    assert "drivers" in explanation
-    assert "recommended_action" in explanation
-    assert explanation["recommended_action"]["urgency"] in [
-        "CRITICAL",
-        "HIGH",
-        "MEDIUM",
-        "LOW",
+
+
+def test_classifier_artifact_loading(artifacts):
+    classifier = SellerRiskClassifier.load(artifacts["directory"] / "classifier.joblib")
+    assert classifier.feature_names == list(artifacts["features"].columns)
+    np.testing.assert_allclose(
+        classifier.champion_model.predict_proba(artifacts["features"]),
+        artifacts["scores"],
+    )
+
+
+def test_survival_model_artifact_loading(artifacts):
+    survival = SellerSurvivalModel.load(str(artifacts["directory"] / "survival.joblib"))
+    hazard_df = survival.get_hazard_ratios()
+    assert set(hazard_df.index) == set(artifacts["features"].columns)
+    assert "hazard_ratio" in hazard_df.columns
+    pd.testing.assert_frame_equal(
+        survival.predict_survival_probability(artifacts["features"], times=[5, 10]),
+        artifacts["survival"],
+    )
+
+
+def test_explainer_prescriptions(artifacts):
+    explainer = joblib.load(artifacts["directory"] / "explainer.joblib")
+    explanation = explainer.explain_seller(
+        {
+            "seller_id": "test_seller_1",
+            "avg_delivery_delay": 8.5,
+            "avg_carrier_handoff": 4.2,
+            "freight_ratio": 0.40,
+            "orders_per_month": 1.0,
+        }
+    )
+    assert [driver["factor"] for driver in explanation["drivers"]] == [
+        "High Delivery Delay",
+        "Slow Carrier Handoff",
+        "Excessive Shipping Cost Ratio",
     ]
+    assert explanation["recommended_action"]["urgency"] == "CRITICAL"

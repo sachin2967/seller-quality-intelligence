@@ -13,6 +13,10 @@ python scripts/evaluate_temporal.py
 python -m pytest -q
 ```
 
+Tests are offline and create their own temporary CSV/model fixtures. Running
+`python -m pytest -q` needs no raw Olist files; the training and observational
+evaluation commands above do require them. Fixtures are not model-quality evidence.
+
 The first pipeline creates the full-history retrospective model and processed seller
 table used by serving. The second produces a separate point-in-time observational
 benchmark; it does not replace the served model. Keep model, explainer, survival

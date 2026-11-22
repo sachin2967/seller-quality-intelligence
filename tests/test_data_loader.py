@@ -1,16 +1,6 @@
 """Unit tests for the data loading and join validation module."""
 
-from pathlib import Path
-
-import pytest
-
-from src.data.loader import DataLoader, RawDataConfig
-
-
-@pytest.fixture
-def data_config():
-    root = Path(__file__).resolve().parent.parent / "data" / "raw"
-    return RawDataConfig.from_directory(root)
+from src.data.loader import DataLoader
 
 
 def test_data_loader_raw_files_exist(data_config):
@@ -33,5 +23,11 @@ def test_joined_item_level_dataset(data_config):
     assert "is_late_delivery" in joined_df.columns
     assert "delivery_delay_days" in joined_df.columns
     assert "carrier_handoff_days" in joined_df.columns
+    assert len(joined_df) == 5
+    assert not joined_df.duplicated(["order_id", "order_item_id"]).any()
+    first_order = joined_df[joined_df["order_id"] == "o1"]
+    assert first_order["review_score"].tolist() == [5, 5]
+    assert first_order["delivery_delay_days"].tolist() == [1, 1]
+    assert first_order["carrier_handoff_days"].tolist() == [1, 1]
     # Check that is_late_delivery is binary (0.0 or 1.0)
     assert set(joined_df["is_late_delivery"].dropna().unique()).issubset({0.0, 1.0})

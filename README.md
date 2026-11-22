@@ -107,6 +107,10 @@ The next valid modeling iteration should create historical seller snapshots (for
 ## Release verification and operations
 
 The 22 November 2026 local verification passed **23 tests** and repository lint.
+The same 23 tests also passed from a temporary clean checkout without raw data or
+model directories. Join/feature tests use authored temporary CSVs; classifier and
+survival persistence tests train small synthetic fixtures and compare restored
+outputs. These tests require no Kaggle credentials and do not reproduce Olist metrics.
 The API image passed non-root, network-isolated artifact-backed readiness and serving checks. The dashboard reads artifacts directly and needs its own authenticated access proxy for remote use.
 
 See the standalone [operations guide](docs/OPERATIONS.md) for configuration,

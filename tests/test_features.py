@@ -1,18 +1,14 @@
 """Unit tests for the seller feature builder and target definition."""
 
-from pathlib import Path
-
 import pytest
 
-from src.data.loader import DataLoader, RawDataConfig
+from src.data.loader import DataLoader
 from src.features.builder import SellerFeatureBuilder
 
 
 @pytest.fixture
-def item_dataset():
-    root = Path(__file__).resolve().parent.parent / "data" / "raw"
-    config = RawDataConfig.from_directory(root)
-    loader = DataLoader(config)
+def item_dataset(data_config):
+    loader = DataLoader(data_config)
     return loader.build_joined_item_level_dataset()
 
 
@@ -26,6 +22,11 @@ def test_feature_builder_output(item_dataset):
     assert "quality_score" in seller_df.columns
     assert "survival_duration" in seller_df.columns
     assert "survival_event" in seller_df.columns
+    first = seller_df.set_index("seller_id").loc["s1"]
+    assert first["unique_orders"] == 2
+    assert first["total_items"] == 3
+    assert first["total_gmv"] == 180
+    assert first["late_delivery_rate"] == pytest.approx(2 / 3)
 
     # Verify target is binary
     assert set(seller_df["is_at_risk"].unique()).issubset({0, 1})
