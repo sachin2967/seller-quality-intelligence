@@ -1,23 +1,48 @@
 services:
+  seller-train:
+    build: .
+    command: ["python", "scripts/train_and_evaluate.py"]
+    volumes:
+      - ./data/raw:/app/data/raw:ro
+      - seller-processed:/app/data/processed
+      - seller-models:/app/models
+    restart: "no"
+
   seller-api:
     build: .
-    container_name: seller-quality-api
-    ports:
-      - "8000:8000"
     command: ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8000"]
-    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      SELLER_API_KEY: ${SELLER_API_KEY:-}
+    ports:
+      - "127.0.0.1:${SELLER_API_PORT:-8020}:8000"
+    volumes:
+      - seller-processed:/app/data/processed:ro
+      - seller-models:/app/models:ro
+    depends_on:
+      seller-train:
+        condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
       interval: 10s
-      timeout: 5s
-      retries: 3
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
 
   seller-dashboard:
     build: .
-    container_name: seller-quality-dashboard
+    command: ["streamlit", "run", "streamlit_app/app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
     ports:
-      - "8501:8501"
-    command: ["streamlit", "run", "streamlit_app/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+      - "127.0.0.1:${SELLER_DASHBOARD_PORT:-8520}:8501"
+    volumes:
+      - seller-processed:/app/data/processed:ro
+      - seller-models:/app/models:ro
     depends_on:
-      - seller-api
+      seller-api:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  seller-processed:
+  seller-models:

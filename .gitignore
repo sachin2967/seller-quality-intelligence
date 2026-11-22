@@ -5,4 +5,7 @@ __pycache__/
 data/raw/
 models/*.joblib
 .venv/
+.env
 data/
+.env.*
+!.env.example

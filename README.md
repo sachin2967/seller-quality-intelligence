@@ -30,7 +30,7 @@ These are retrospective observational estimates from one small historical extrac
 
 ### Data provenance
 
-The input files are from the public Brazilian Olist e-commerce dataset, locally provided under its applicable dataset terms; this repository does not download the data. The checked-in raw files are not committed to Git. The temporal evaluation is entirely observational and uses no synthetic records.
+The input files are from the [Brazilian E-Commerce Public Dataset by Olist on Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce). Obtain the files under the terms displayed by the source, place the four required CSVs in `data/raw/`, and do not commit or redistribute them. The repository does not fetch the data automatically; Kaggle CLI access requires the user to configure their own credentials. The temporal evaluation is entirely observational and uses no synthetic records.
 
 ## Architecture
 
@@ -58,7 +58,7 @@ python scripts/train_and_evaluate.py
 pytest tests -q
 ```
 
-The pipeline reads the Olist CSV files from `data/raw/`, writes the derived seller feature table to `data/processed/`, saves model artifacts under `models/`, and regenerates `benchmark_report.json`. Raw data and model binaries are ignored by Git; users must obtain the dataset under its applicable terms.
+Required raw files are `olist_orders_dataset.csv`, `olist_order_items_dataset.csv`, `olist_order_reviews_dataset.csv`, and `olist_sellers_dataset.csv`. The pipeline validates and reads them from `data/raw/`, writes the derived seller feature table to `data/processed/`, saves model artifacts under `models/`, and regenerates `benchmark_report.json`. Raw data and model binaries are ignored by Git.
 
 Start the demo services after running the pipeline:
 
@@ -69,7 +69,20 @@ streamlit run streamlit_app/app.py
 
 FastAPI documentation is available at `http://127.0.0.1:8000/docs`.
 
+To start the containerized demo after putting the source files in `data/raw/`, run `docker compose up --build`. A one-shot training service builds artifacts before the API is considered ready; generated model and processed-data artifacts are kept in Docker named volumes. Both published ports bind to loopback (API `8020`, dashboard `8520` by default; override with `SELLER_API_PORT` / `SELLER_DASHBOARD_PORT`). Local mode is unauthenticated; production mode requires the operator key described below. Neither mode implements multi-user authorization or replaces external TLS/access controls.
+
 ## Repository map
+
+### Serving pilot hardening
+
+Production mode requires a 32+ character `SELLER_API_KEY`; clients send `X-API-Key`.
+Bodies are bounded to 64 KiB. Artifact loading now publishes dependencies together;
+missing/empty data, unavailable explainers and invalid model scores return 503.
+Unknown sellers return 404 only when storage is available. `/live` checks the
+process; `/ready` and `/health` check artifacts. API responses identify retrospective,
+uncalibrated scope. The compatibility field `risk_probability` is not a calibrated
+future probability. This adds operator authentication, not multi-user authorization;
+remote use still needs TLS/access controls.
 
 - `src/data/loader.py`: input loading, joins, and order-level review deduplication.
 - `src/features/builder.py`: seller aggregates and retrospective label construction.
@@ -87,5 +100,16 @@ FastAPI documentation is available at `http://127.0.0.1:8000/docs`.
 - Cox metrics and hazard ratios from the full dataset are descriptive/apparent, not held-out survival performance or causal effects.
 - Recommendations are heuristic playbooks, not measured interventions.
 - API risk probabilities are not calibrated for prospective decisions or tied to a validated intervention threshold.
+- Docker startup requires the four source CSVs under `data/raw/`; the container does not download or bundle the dataset.
 
 The next valid modeling iteration should create historical seller snapshots (for example, fixed monthly cutoffs), compute all features using records available by each cutoff, and label only outcomes in the following fixed horizon. Split by time, keep the latest period untouched until final evaluation, tune thresholds only on validation data, and compare against simple operational baselines. ROI should remain absent until a credible intervention effect and cost model are measured.
+
+## Release verification and operations
+
+The 22 November 2026 local verification passed **23 tests** and repository lint.
+The API image passed non-root, network-isolated artifact-backed readiness and serving checks. The dashboard reads artifacts directly and needs its own authenticated access proxy for remote use.
+
+See the standalone [operations guide](docs/OPERATIONS.md) for configuration,
+failure handling, recovery and rollout limits. Cross-project reports and replay tools
+live in the separate [portfolio guide](https://github.com/sachin2967/ml-portfolio).
+Hosted CI and cloud deployment are separate checks; a local pass does not imply either.
