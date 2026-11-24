@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from src.evaluation.temporal import build_temporal_snapshots
 
@@ -58,7 +59,8 @@ def test_temporal_features_stop_at_cutoff_and_label_uses_future_orders_only():
     assert row.future_at_risk == 1
 
 
-def test_review_with_unknown_timestamp_is_not_used_as_feature():
+@pytest.mark.parametrize("review_time", [None, "2020-03-01"])
+def test_unavailable_review_does_not_remove_delivered_history(review_time):
     cutoff = pd.Timestamp("2020-02-01")
     rows = []
     for order_id, day in [("h1", "2020-01-01"), ("h2", "2020-01-10")]:
@@ -69,7 +71,7 @@ def test_review_with_unknown_timestamp_is_not_used_as_feature():
                 "order_purchase_timestamp": day,
                 "order_delivered_customer_date": day,
                 "order_estimated_delivery_date": day,
-                "review_answer_timestamp": None,
+                "review_answer_timestamp": review_time,
                 "review_score": 1,
                 "price": 1,
                 "order_status": "delivered",
@@ -94,6 +96,7 @@ def test_review_with_unknown_timestamp_is_not_used_as_feature():
     )
     snapshot = build_temporal_snapshots(pd.DataFrame(rows), [cutoff], horizon_days=30)
     assert snapshot.iloc[0].mean_review_lookback == 3.0
+    assert snapshot.iloc[0].orders_lookback == 2
     assert snapshot.iloc[0].future_at_risk == 0
 
 

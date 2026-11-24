@@ -24,13 +24,48 @@ The repository now also contains a separate, more realistic retrospective benchm
 python scripts/evaluate_temporal.py
 ```
 
-It creates seller snapshots at six historical cutoffs and uses only orders delivered by each cutoff for features. Review features are retained only when the review-answer timestamp is at or before that cutoff; an unknown timestamp makes the review unavailable. The label checks orders purchased in the following 90 days and observes delivery/review outcomes for up to 30 additional days. Only deliveries recorded by the end of that grace period contribute, so incomplete orders can bias observed risk; sellers without an observed future delivery are omitted. The training snapshots are from before 2018-01-01; the holdout cutoff is 2018-03-27. On the current local raw files, the latest holdout contains 379 seller snapshots (AP **0.632**, prevalence baseline **0.420**, ROC-AUC **0.669**); the 133 rows from sellers absent in training score AP **0.468** and ROC-AUC **0.635**. Regenerate these values with `python scripts/evaluate_temporal.py` before quoting them. Results are recorded in [`temporal_benchmark_report.json`](./temporal_benchmark_report.json), with rows in `data/processed/seller_temporal_snapshots.csv`.
+It creates seller snapshots at six historical cutoffs and uses only orders delivered by each cutoff for features. Review scores are available only when their answer timestamp is at or before the cutoff; unavailable reviews are masked without removing the order. Labels use purchases in the next 90 days with up to 30 additional observation days. Sellers without an observed future delivery are omitted. Training labels must mature before the first test cutoff, 2018-03-27. The preserved 12,000-order local subset gives 383 test sellers, AP **0.629** versus prevalence **0.418**, and AUC **0.659**. The 212 sellers absent from training have AP **0.512** and AUC **0.606**. Regenerate with `python scripts/evaluate_temporal.py`; see [the report](temporal_benchmark_report.json). The separate full-release study is below.
 
 These are retrospective observational estimates from one small historical extract, not prospective or operational validation. Incomplete future deliveries are not included in the outcome, and sellers with no observed delivered order are excluded. Snapshots can repeat the same seller across periods, so row-level metrics do not have independent observations and no uncertainty interval is claimed. The benchmark excludes cancellation rate as a feature because its point-in-time history contains completed deliveries only. No threshold, calibration, intervention effect, or financial benefit is established. The old full-history CV and apparent Cox results remain only for comparison and should not be presented as prediction evidence.
 
+### Expanded rolling study and official full dataset
+
+The temporal builder now retains completed historical orders when their reviews
+arrive after the cutoff, masking only the unavailable review. Training also purges
+snapshots whose full outcome-observation window has not matured at prediction time.
+These corrections are included in the regenerated subset
+[report](temporal_benchmark_report.json) and both rolling studies.
+
+```powershell
+python scripts/evaluate_rolling.py
+python scripts/download_olist.py
+python scripts/evaluate_rolling.py --data-dir data/raw/official_v2 --output full_rolling_benchmark_report.json
+```
+
+The public download needs no Kaggle credential on the verified endpoint. It stores
+the official v2 files separately from existing imports, verifies pinned observed
+SHA-256 checksums and release row counts, and records provenance in the
+[source manifest](docs/OLIST_SOURCE_MANIFEST.json). The release contains 99,441
+orders, 112,650 items, 99,224 reviews and 3,095 seller records. Raw files stay ignored;
+their CC BY-NC-SA 4.0 terms are separate from the code license.
+
+The [full-data report](full_rolling_benchmark_report.json) contains 11 monthly
+evaluation windows with expanding training and fully matured training labels.
+It compares a fixed logistic model, historical late rate, historical low reviews
+and training prevalence at a fixed 10% review capacity. Each window includes
+500 seller-cluster bootstrap repetitions. The latest cutoff (2018-04-01) has
+974 eligible sellers: AP 0.8065 versus prevalence 0.5883, AUC 0.7325, AP interval
+[0.7736, 0.8377], and 93 adverse-outcome sellers among 98 reviewed (94.9% precision,
+16.2% recall). The outcome means any observed adverse delivery/review in the next
+90-day purchase window with 30-day grace; it depends on future order exposure.
+This is an exploratory historical study with repeated sellers and overlapping
+windows, selected observed deliveries and no causal/intervention claim. Intervals
+do not cover future time periods or missing-outcome bias. These experimental
+models do not replace the API's full-history retrospective diagnostic artifact.
+
 ### Data provenance
 
-The input files are from the [Brazilian E-Commerce Public Dataset by Olist on Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce). Obtain the files under the terms displayed by the source, place the four required CSVs in `data/raw/`, and do not commit or redistribute them. The repository does not fetch the data automatically; Kaggle CLI access requires the user to configure their own credentials. The temporal evaluation is entirely observational and uses no synthetic records.
+The input files are from the [Brazilian E-Commerce Public Dataset by Olist on Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce). Obtain the files under the terms displayed by the source, place the four required CSVs in `data/raw/`, and do not commit or redistribute them. The optional download command above retrieves only the pinned public version into its own directory. The temporal evaluation is entirely observational and uses no synthetic records.
 
 ## Architecture
 
@@ -106,8 +141,8 @@ The next valid modeling iteration should create historical seller snapshots (for
 
 ## Release verification and operations
 
-The 22 November 2026 local verification passed **23 tests** and repository lint.
-The same 23 tests also passed from a temporary clean checkout without raw data or
+The latest 22 November 2026 local verification passed **30 tests** and repository lint.
+The earlier 23-test suite also passed from a temporary clean checkout without raw data or
 model directories. Join/feature tests use authored temporary CSVs; classifier and
 survival persistence tests train small synthetic fixtures and compare restored
 outputs. These tests require no Kaggle credentials and do not reproduce Olist metrics.

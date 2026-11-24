@@ -57,15 +57,14 @@ def build_temporal_snapshots(
             (df.order_purchase_timestamp < cutoff)
             & df.order_delivered_customer_date.notna()
             & (df.order_delivered_customer_date <= cutoff)
-            & (
-                df.review_answer_timestamp.isna()
-                | (df.review_answer_timestamp <= cutoff)
-            )
         ]
         # A missing review timestamp means its availability time is unknown;
         # retain the transaction but do not expose that review as a feature.
         history = history.copy()
-        history.loc[history.review_answer_timestamp.isna(), "review_score"] = pd.NA
+        history.loc[
+            history.review_answer_timestamp.isna()
+            | (history.review_answer_timestamp > cutoff), "review_score"
+        ] = pd.NA
         future = df[
             (df.order_purchase_timestamp >= cutoff)
             & (df.order_purchase_timestamp < purchase_window_end)

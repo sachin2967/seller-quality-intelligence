@@ -15,6 +15,7 @@ from sklearn.preprocessing import StandardScaler
 
 from src.data.loader import DataLoader, RawDataConfig
 from src.evaluation.temporal import FEATURES, build_temporal_snapshots
+from src.evaluation.validation import matured_training_rows
 
 
 def main():
@@ -33,8 +34,10 @@ def main():
     )
     if snapshot.empty:
         raise RuntimeError("No eligible temporal snapshots; check raw data coverage.")
-    train = snapshot[snapshot.cutoff < pd.Timestamp("2018-01-01")]
     test = snapshot[snapshot.cutoff >= pd.Timestamp("2018-01-01")]
+    # Training outcomes must have matured when the first test prediction is made.
+    # A cutoff before the test date alone does not prevent future-label leakage.
+    train = matured_training_rows(snapshot, test.cutoff.min())
     if train.future_at_risk.nunique() < 2 or test.future_at_risk.nunique() < 2:
         raise RuntimeError(
             "Temporal split lacks both outcome classes; do not report classification metrics."
@@ -55,6 +58,10 @@ def main():
         "feature_cutoff": "only orders delivered by cutoff; reviews are available only when review answer timestamp <= cutoff; missing review timestamps are treated as unavailable",
         "cutoff_schedule": [str(pd.Timestamp(c).date()) for c in cutoffs],
         "train_cutoff_before": "2018-01-01",
+        "train_labels_available_by": str(test.cutoff.min().date()),
+        "latest_train_outcome_observation_end": str(
+            train.outcome_observation_end.max().date()
+        ),
         "test_cutoff_from": "2018-01-01",
         "purchase_window_days": purchase_window_days,
         "outcome_grace_days": outcome_grace_days,
