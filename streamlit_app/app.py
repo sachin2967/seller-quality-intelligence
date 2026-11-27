@@ -91,7 +91,7 @@ col2.metric(
     f"{at_risk_pct:.1f}% of total",
     delta_color="inverse",
 )
-col3.metric("Avg Seller GMV", f"₹{avg_gmv:,.0f}")
+col3.metric("Avg Seller GMV", f"R$ {avg_gmv:,.0f}")
 col4.metric("Avg Review Score", f"{avg_review:.2f} / 5.0")
 col5.metric("Avg Late Delivery Rate", f"{avg_late:.1f}%")
 
@@ -144,7 +144,7 @@ with tab1:
         )
 
     ax.set_xscale("log")
-    ax.set_xlabel("Total GMV (Log Scale)")
+    ax.set_xlabel("Total GMV (BRL, log scale)")
     ax.set_ylabel("Quality Score (0 - 100)")
     ax.set_title("Seller Quality Score vs GMV by Risk Segment")
     ax.legend()
@@ -169,7 +169,7 @@ with tab1:
                 "segment": "Risk Segment",
                 "risk_prob": "Risk Prob",
                 "quality_score": "Score",
-                "total_gmv": "GMV (₹)",
+                "total_gmv": "GMV (BRL)",
                 "late_delivery_rate": "Late Rate",
                 "mean_review_score": "Review",
             }
