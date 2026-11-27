@@ -1,27 +1,27 @@
 {
   "dataset": {
-    "total_sellers": 1104,
-    "at_risk_sellers": 401,
-    "at_risk_prevalence": 0.3632246376811594
+    "total_sellers": 2462,
+    "at_risk_sellers": 843,
+    "at_risk_prevalence": 0.34240454914703494
   },
   "models": {
     "baseline_logistic_regression": {
-      "roc_auc": 0.7844641262336298,
-      "roc_auc_std": 0.02212186742501364,
-      "pr_auc": 0.7082518878585253,
-      "f1_score": 0.6513400654383636,
-      "brier_score": 0.18597016211433326
+      "roc_auc": 0.7934470586662907,
+      "roc_auc_std": 0.014382376156119016,
+      "pr_auc": 0.6985889318333361,
+      "f1_score": 0.6367929496765699,
+      "brier_score": 0.18182463821363337
     },
     "champion_lightgbm": {
-      "roc_auc": 0.8325078661488237,
-      "roc_auc_std": 0.035822509045508905,
-      "pr_auc": 0.8211886536191739,
-      "f1_score": 0.7139812184779789,
-      "brier_score": 0.1456276016618828
+      "roc_auc": 0.826406451827187,
+      "roc_auc_std": 0.01652005560866303,
+      "pr_auc": 0.7688896613038398,
+      "f1_score": 0.6593867217421184,
+      "brier_score": 0.15617726976177318
     },
     "survival_cox_ph": {
-      "concordance_index": 0.7063397810766232,
-      "events_observed": 526,
+      "concordance_index": 0.6664895417252434,
+      "events_observed": 1613,
       "evaluation_scope": "apparent_in_sample_full_history_association_only"
     }
   },

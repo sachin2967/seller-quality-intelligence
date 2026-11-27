@@ -23,28 +23,40 @@ choosing interventions. No intervention or counterfactual data exists.
 
 ## Data
 
-Olist Brazilian E-Commerce Public Dataset (Kaggle): a small, finite historical
-extract. Orders and sellers are not independent, and snapshots repeat sellers.
+Olist Brazilian E-Commerce Public Dataset (Kaggle). The rerun uses the
+complete cached historical release and checks it against the source manifest. Orders and sellers are not independent, and snapshots repeat sellers.
 
 ## Evaluation
 
-Temporal holdout (cutoff 2018-03-27, 379 rows, prevalence 0.420):
+The fixed point-in-time benchmark uses the full Olist release. Delivered orders stay
+in the history when reviews are unavailable. Training uses only mature outcomes.
 
-| Slice | ROC-AUC | Average precision |
-| --- | ---: | ---: |
-| All holdout rows | 0.669 | 0.632 |
-| 133 rows from sellers absent in training (prevalence 0.346) | 0.635 | 0.468 |
+| Holdout at 2018-03-27 | Rows | Prevalence | ROC-AUC | Average precision |
+| --- | ---: | ---: | ---: | ---: |
+| All holdout sellers | 961 | 0.6035 | 0.7370 | 0.8119 |
+| Sellers absent from eligible training snapshots | 450 | 0.5711 | 0.7017 | 0.7866 |
 
-Holdout Brier score 0.227.
+Holdout Brier score is 0.2079.
+The README's old-vs-new table includes [the matched original-code rerun](../reports/temporal_migration_comparison.json).
 
-Retrospective 5-fold random-seller CV (1,104 sellers, 36.3% labeled at-risk):
-LightGBM ROC-AUC 0.833 / PR-AUC 0.821, logistic regression 0.784 / 0.708. These measure
-reconstruction of a rule, not prediction. Cox concordance 0.706 is in-sample.
+The rolling evaluation covers 11 eligible cutoffs. At 2018-04-01,
+fixed logistic regression achieved AP 0.8065 versus
+prevalence 0.5883. Its 95% seller-cluster interval was
+0.7736–0.8377, conditional on that period.
+
+Retrospective 5-fold random-seller CV on 2,462 sellers
+(34.2% labeled at-risk) gives LightGBM ROC-AUC
+0.826 and PR-AUC 0.769,
+with logistic regression at 0.793 and
+0.699, respectively. These results measure
+reconstruction of a contemporaneous rule. Cox concordance 0.666
+is apparent in-sample.
 
 ## Limitations
 
 - Outcomes exclude incomplete or undelivered future orders, which can bias risk.
-- Only six cutoffs and one holdout cutoff; no confidence intervals.
+- The single holdout has no uncertainty interval. Rolling intervals describe
+  within-window seller sampling and the windows overlap.
 - Scores are uncalibrated; `risk_probability` in the API is a compatibility field name.
 - No threshold selection, proportional-hazards diagnostics or censoring treatment.
 - Cancellation rate is not a temporal feature because the point-in-time history holds
