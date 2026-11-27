@@ -13,6 +13,10 @@ associations, and a diagnostic FastAPI/Streamlit demo.
 > intervention benefit or realized savings. Scores are uncalibrated and the API
 > recommendations are demonstration playbooks, not operational decisions.
 
+![Aggregate Streamlit dashboard for retrospective seller-condition scores](docs/images/retrospective-marketplace.png)
+
+*The marketplace overview shows the retrospective Olist demo with the evaluation caveat visible.*
+
 ## Highlights
 
 - **Point-in-time snapshots:** features use only orders delivered by each cutoff, and
