@@ -12,6 +12,10 @@ associations, and a diagnostic FastAPI/Streamlit demo.
 > It does not establish prospective seller-risk prediction, early warning, causal
 > intervention benefit or realized savings. Scores are uncalibrated and the API
 > recommendations are demonstration playbooks, not operational decisions.
+>
+> **Try it locally:** follow the [Quickstart](#quickstart) for the FastAPI/Streamlit
+> demo and view the [retrospective dashboard preview](docs/images/retrospective-marketplace.png).
+> This project does not currently have a hosted live demo.
 
 ![Aggregate Streamlit dashboard for retrospective seller-condition scores](docs/images/retrospective-marketplace.png)
 
