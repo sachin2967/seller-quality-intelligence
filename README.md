@@ -1,119 +1,149 @@
-# Seller Quality Intelligence (offline research prototype)
+# Seller Quality Intelligence
 
-A Python prototype for joining marketplace order data, constructing seller-level features, exploring retrospective seller-condition classification and Cox survival associations, and serving diagnostic scores through FastAPI and Streamlit.
+[![CI](https://github.com/sachin2967/seller-quality-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/sachin2967/seller-quality-intelligence/actions/workflows/ci.yml)
+![Python 3.11](https://img.shields.io/badge/python-3.11-blue)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
-> **Evaluation boundary:** this repository does not establish prospective seller-risk prediction, early warning, causal intervention benefit, or realized financial savings. Features and labels are aggregated over overlapping full seller histories. Classification metrics use stratified random-seller cross-validation and describe reconstruction of a retrospective rule-derived label. The Cox concordance in the generated report is apparent in-sample. Treat API scores as a demonstration, not operational decisions.
+Seller-level analytics on the public Olist Brazilian e-commerce data: validated joins,
+a point-in-time temporal benchmark, retrospective classification, Cox survival
+associations, and a diagnostic FastAPI/Streamlit demo.
 
-## Problem and data
+> **Evaluation boundary.** This is a retrospective, observational research prototype.
+> It does not establish prospective seller-risk prediction, early warning, causal
+> intervention benefit or realized savings. Scores are uncalibrated and the API
+> recommendations are demonstration playbooks, not operational decisions.
 
-The prototype uses the public Brazilian Olist e-commerce dataset, consisting of order, order-item, review, and seller tables. The loader joins at order-item grain and deduplicates reviews by order before joining. `SellerFeatureBuilder` aggregates records by seller and labels a seller at risk if their full-period mean review score is below 3.8, late-delivery rate exceeds 15%, or cancellation rate exceeds 5%.
+## Highlights
 
-This label describes a seller's observed historical state; it is not a future outcome. Some model inputs (such as delivery delay) are closely related to the rule's components, so high cross-validation metrics should not be interpreted as evidence of early warning. The data also has no intervention assignment or observed recovery counterfactual, so it cannot support ROI claims.
+- **Point-in-time snapshots:** features use only orders delivered by each cutoff, and
+  review features only when the review-answer timestamp is at or before the cutoff.
+  Outcomes cover orders purchased in the next 90 days, observed for up to 30 more days.
+- **Temporal holdout:** six cutoffs, training snapshots before 2018-01-01, holdout at
+  2018-03-27, plus a separate score for sellers never seen in training.
+- **Honest comparison:** average precision is reported against prevalence, and the older
+  random-seller CV and in-sample Cox results are labeled as non-predictive.
+- **Failure-aware serving:** artifacts are published together, missing or invalid
+  state returns `503`, responses carry their evaluation scope, and production mode
+  requires an operator key.
 
-## Current evaluation
+## Results
 
-Run the pipeline to regenerate [`benchmark_report.json`](./benchmark_report.json). It reports stratified 5-fold seller-level CV for Logistic Regression and LightGBM on the retrospective label, plus an explicitly marked apparent in-sample Cox fit. The report intentionally excludes financial impact estimates. The existing report numbers should be regenerated from the checked-in pipeline before quoting them; do not copy older ROI, top-k precision, or hazard-ratio claims from prior project descriptions.
+### Temporal observational benchmark (`temporal_benchmark_report.json`)
 
-For an interview, describe the current work as a data integration and retrospective modeling prototype. A defensible prospective study would need a timestamped feature cutoff, features computed only before that cutoff, a prespecified future outcome window, a later temporal holdout, censoring rules, proportional-hazards diagnostics, uncertainty estimates, and intervention evidence before any savings claim.
+1,215 seller snapshots from 552 sellers; 836 training rows, 379 holdout rows.
 
-### Point-in-time temporal benchmark
+| Holdout | Rows | Prevalence | ROC-AUC | Average precision |
+| --- | ---: | ---: | ---: | ---: |
+| Latest cutoff (2018-03-27), all sellers | 379 | 0.420 | **0.669** | **0.632** |
+| Sellers absent from training | 133 | 0.346 | 0.635 | 0.468 |
 
-The repository now also contains a separate, more realistic retrospective benchmark:
+The model is class-weighted logistic regression on eight lookback features. Brier
+score on the holdout is 0.227. Rows repeat sellers across periods, incomplete future
+deliveries are excluded (which can bias observed risk), and no uncertainty interval,
+calibration, threshold or intervention effect is claimed.
 
-```powershell
-python scripts/evaluate_temporal.py
-```
+### Retrospective full-history benchmark (`benchmark_report.json`)
 
-It creates seller snapshots at six historical cutoffs and uses only orders delivered by each cutoff for features. Review features are retained only when the review-answer timestamp is at or before that cutoff; an unknown timestamp makes the review unavailable. The label checks orders purchased in the following 90 days and observes delivery/review outcomes for up to 30 additional days. Only deliveries recorded by the end of that grace period contribute, so incomplete orders can bias observed risk; sellers without an observed future delivery are omitted. The training snapshots are from before 2018-01-01; the holdout cutoff is 2018-03-27. On the current local raw files, the latest holdout contains 379 seller snapshots (AP **0.632**, prevalence baseline **0.420**, ROC-AUC **0.669**); the 133 rows from sellers absent in training score AP **0.468** and ROC-AUC **0.635**. Regenerate these values with `python scripts/evaluate_temporal.py` before quoting them. Results are recorded in [`temporal_benchmark_report.json`](./temporal_benchmark_report.json), with rows in `data/processed/seller_temporal_snapshots.csv`.
+1,104 sellers, 401 labeled at-risk (36.3%). Stratified 5-fold random-seller CV on a
+rule-derived label (mean review < 3.8, late-delivery rate > 15%, or cancellation
+rate > 5%).
 
-These are retrospective observational estimates from one small historical extract, not prospective or operational validation. Incomplete future deliveries are not included in the outcome, and sellers with no observed delivered order are excluded. Snapshots can repeat the same seller across periods, so row-level metrics do not have independent observations and no uncertainty interval is claimed. The benchmark excludes cancellation rate as a feature because its point-in-time history contains completed deliveries only. No threshold, calibration, intervention effect, or financial benefit is established. The old full-history CV and apparent Cox results remain only for comparison and should not be presented as prediction evidence.
+| Model | ROC-AUC | PR-AUC | F1 | Brier |
+| --- | ---: | ---: | ---: | ---: |
+| Logistic regression | 0.784 | 0.708 | 0.651 | 0.186 |
+| LightGBM | 0.833 | 0.821 | 0.714 | 0.146 |
 
-### Data provenance
-
-The input files are from the [Brazilian E-Commerce Public Dataset by Olist on Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce). Obtain the files under the terms displayed by the source, place the four required CSVs in `data/raw/`, and do not commit or redistribute them. The repository does not fetch the data automatically; Kaggle CLI access requires the user to configure their own credentials. The temporal evaluation is entirely observational and uses no synthetic records.
+These numbers reconstruct a contemporaneous rule from related operational features
+over overlapping histories. They are **not** evidence of early warning. The Cox
+concordance (0.706, 526 events) is apparent in-sample and descriptive only.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    A[Orders / items / reviews / sellers] --> B[Validated joins at item grain]
-    B --> C[Full-history retrospective aggregates]
+    A[Orders / items / reviews / sellers CSVs] --> B[Validated joins at item grain]
+    B --> C[Full-history aggregates + rule label]
     B --> T[Point-in-time seller snapshots]
-    C --> D[Stratified CV and apparent Cox exploration]
-    T --> V[Temporal observational holdout]
+    C --> D[Stratified CV + apparent Cox fit]
+    T --> V[Temporal holdout evaluation]
     D --> F[FastAPI diagnostic API]
-    V --> F
     F --> G[Streamlit demo]
 ```
 
-## Run locally
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the [model card](docs/MODEL_CARD.md).
 
-Python 3.10+ is recommended.
+## Quickstart
 
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
+Requires Python 3.11 and the four Olist CSVs from the
+[Kaggle dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce), obtained
+under its terms and placed in `data/raw/` (not downloaded automatically, never committed):
+`olist_orders_dataset.csv`, `olist_order_items_dataset.csv`,
+`olist_order_reviews_dataset.csv`, `olist_sellers_dataset.csv`.
+
+```bash
+git clone https://github.com/sachin2967/seller-quality-intelligence.git
+cd seller-quality-intelligence
+python -m venv .venv && source .venv/bin/activate     # Windows: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python scripts/train_and_evaluate.py
-pytest tests -q
+make train       # retrospective CV, Cox fit, model artifacts, benchmark_report.json
+make temporal    # point-in-time benchmark, temporal_benchmark_report.json
+make api         # http://127.0.0.1:8000/docs
+make dashboard   # Streamlit demo
+make test        # lint + 23 offline tests
 ```
 
-Required raw files are `olist_orders_dataset.csv`, `olist_order_items_dataset.csv`, `olist_order_reviews_dataset.csv`, and `olist_sellers_dataset.csv`. The pipeline validates and reads them from `data/raw/`, writes the derived seller feature table to `data/processed/`, saves model artifacts under `models/`, and regenerates `benchmark_report.json`. Raw data and model binaries are ignored by Git.
+The tests create their own temporary fixtures and need no Olist files; `make train`
+and `make temporal` do. Docker: put the CSVs in `data/raw/` and run
+`docker compose up --build` (API on `8020`, dashboard on `8520`, loopback only).
 
-Start the demo services after running the pipeline:
+## API
 
-```powershell
-uvicorn api.app:app --host 127.0.0.1 --port 8000
-streamlit run streamlit_app/app.py
-```
+| Route | Purpose |
+| --- | --- |
+| `GET /live` | Process liveness |
+| `GET /ready`, `/health` | Artifact readiness |
+| `GET /api/summary` | Marketplace-level seller distribution |
+| `GET /api/sellers/{seller_id}` | Diagnostic score, drivers and playbook (`404` if unknown) |
+| `POST /api/score` | Score a hypothetical seller profile |
 
-FastAPI documentation is available at `http://127.0.0.1:8000/docs`.
+Every scoring response includes `evaluation_scope`, `score_interpretation` and
+`action_scope` fields. `risk_probability` is a compatibility name for an uncalibrated
+score, not a calibrated probability. Production mode (`APP_ENV=production`) requires a
+32+ character `SELLER_API_KEY` sent as `X-API-Key`; bodies are capped at 64 KiB.
+Operator authentication is not multi-user authorization; remote use needs TLS and
+access controls. See [docs/OPERATIONS.md](docs/OPERATIONS.md).
 
-To start the containerized demo after putting the source files in `data/raw/`, run `docker compose up --build`. A one-shot training service builds artifacts before the API is considered ready; generated model and processed-data artifacts are kept in Docker named volumes. Both published ports bind to loopback (API `8020`, dashboard `8520` by default; override with `SELLER_API_PORT` / `SELLER_DASHBOARD_PORT`). Local mode is unauthenticated; production mode requires the operator key described below. Neither mode implements multi-user authorization or replaces external TLS/access controls.
+## Repository layout
 
-## Repository map
+| Path | Responsibility |
+| --- | --- |
+| `src/data/loader.py` | CSV loading, validation, item-grain joins, review deduplication |
+| `src/features/builder.py` | Seller aggregates and retrospective label |
+| `src/evaluation/temporal.py` | Point-in-time snapshot construction |
+| `src/models/` | Logistic regression, LightGBM, Cox model, explanations |
+| `scripts/` | `train_and_evaluate.py`, `evaluate_temporal.py` |
+| `api/`, `streamlit_app/` | Local demonstration interfaces |
+| `tests/` | 23 offline tests: loader, features, temporal gating, models, API |
 
-### Serving pilot hardening
+## Limitations
 
-Production mode requires a 32+ character `SELLER_API_KEY`; clients send `X-API-Key`.
-Bodies are bounded to 64 KiB. Artifact loading now publishes dependencies together;
-missing/empty data, unavailable explainers and invalid model scores return 503.
-Unknown sellers return 404 only when storage is available. `/live` checks the
-process; `/ready` and `/health` check artifacts. API responses identify retrospective,
-uncalibrated scope. The compatibility field `risk_probability` is not a calibrated
-future probability. This adds operator authentication, not multi-user authorization;
-remote use still needs TLS/access controls.
-
-- `src/data/loader.py`: input loading, joins, and order-level review deduplication.
-- `src/features/builder.py`: seller aggregates and retrospective label construction.
-- `src/models/`: Logistic Regression, LightGBM, Cox model, and diagnostic explanations.
-- `src/evaluation/`: generic ranking and cost-matrix helpers. The current pipeline does not use them to claim business impact.
-- `scripts/train_and_evaluate.py`: reproducible retrospective CV and exploratory fit.
-- `api/`, `streamlit_app/`: local demonstration interfaces.
-- `tests/`: loader, feature, model-artifact, and API checks.
-
-## Known limitations and next research step
-
-- The point-in-time benchmark is retrospective and has only six cutoffs, with one cutoff in the temporal test period.
-- The rule-derived outcome is contemporaneous and partly encoded by related operational features.
+- One small historical extract, six cutoffs, and a single holdout cutoff.
+- The rule-based label is contemporaneous and partly encoded by related features.
 - Random seller folds do not test temporal or marketplace-shift generalization.
-- Cox metrics and hazard ratios from the full dataset are descriptive/apparent, not held-out survival performance or causal effects.
-- Recommendations are heuristic playbooks, not measured interventions.
-- API risk probabilities are not calibrated for prospective decisions or tied to a validated intervention threshold.
-- Docker startup requires the four source CSVs under `data/raw/`; the container does not download or bundle the dataset.
+- Cox hazard ratios are descriptive associations, not held-out performance or causal effects.
+- Recommendations are heuristic playbooks; no intervention was measured, so there is
+  no ROI claim.
+- The next valid step is repeated temporal holdouts with censoring treatment,
+  calibration, survival diagnostics and intervention evidence.
 
-The next valid modeling iteration should create historical seller snapshots (for example, fixed monthly cutoffs), compute all features using records available by each cutoff, and label only outcomes in the following fixed horizon. Split by time, keep the latest period untouched until final evaluation, tune thresholds only on validation data, and compare against simple operational baselines. ROI should remain absent until a credible intervention effect and cost model are measured.
+## Related projects
 
-## Release verification and operations
+[Fraud scoring](https://github.com/sachin2967/fraud-risk-scoring-pipeline) ·
+[Model monitoring](https://github.com/sachin2967/model-monitoring-drift-platform) ·
+[ADK commerce analyst](https://github.com/sachin2967/google-adk-multi-agent-analyst) ·
+[LeetCode mentor](https://github.com/sachin2967/leetcode-knowledge-system) ·
+[Portfolio guide](https://github.com/sachin2967/ml-portfolio)
 
-The 22 November 2026 local verification passed **23 tests** and repository lint.
-The same 23 tests also passed from a temporary clean checkout without raw data or
-model directories. Join/feature tests use authored temporary CSVs; classifier and
-survival persistence tests train small synthetic fixtures and compare restored
-outputs. These tests require no Kaggle credentials and do not reproduce Olist metrics.
-The API image passed non-root, network-isolated artifact-backed readiness and serving checks. The dashboard reads artifacts directly and needs its own authenticated access proxy for remote use.
+## License
 
-See the standalone [operations guide](docs/OPERATIONS.md) for configuration,
-failure handling, recovery and rollout limits. Cross-project reports and replay tools
-live in the separate [portfolio guide](https://github.com/sachin2967/ml-portfolio).
-Hosted CI and cloud deployment are separate checks; a local pass does not imply either.
+MIT. The Olist dataset keeps its own terms; do not redistribute it.
