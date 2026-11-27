@@ -1,0 +1,786 @@
+{
+  "protocol_version": "rolling-matured-v1",
+  "python": "3.12.14",
+  "raw_sha256": {
+    "olist_orders_dataset.csv": "8df58ef3d2d7e9944010f7beecd9b75367f5588ec6e3c91cec19ae3345ef9ecf",
+    "olist_order_items_dataset.csv": "0bc4d068c4fe38cbb01bd90e8746e3c613fe7b4baef75fab7b0e329701c3e279",
+    "olist_order_reviews_dataset.csv": "012b61c7593e34f51fa614efdf802b9c7056ce6aae5307ddb93236e7cfc797d7",
+    "olist_sellers_dataset.csv": "1f643d2b950373b85735e7794b20986f528d7a000432e7c6f9bcbb44d0846a0e"
+  },
+  "protocol": "Monthly expanding training; 90-day purchase + 30-day grace; train labels mature by each cutoff; fixed logistic and baselines, no test tuning; 10% review capacity.",
+  "scope": "Historical observational study; all windows are exploratory after prior dataset inspection.",
+  "windows": [
+    {
+      "cutoff": "2017-06-01",
+      "train_rows": 126,
+      "latest_training_label_date": "2017-06-01",
+      "train_unique_sellers": 87,
+      "test_unique_sellers": 477,
+      "sellers_with_future_purchases": 888,
+      "evaluated_sellers": 477,
+      "methods": {
+        "fixed_logistic": {
+          "rows": 477,
+          "positives": 281,
+          "prevalence": 0.589098532494759,
+          "average_precision": 0.8041628085310284,
+          "roc_auc": 0.7064238506790617,
+          "review_capacity_fraction": 0.1,
+          "review_count": 48,
+          "precision_at_capacity": 0.9791666666666666,
+          "recall_at_capacity": 0.16725978647686832
+        },
+        "historical_late_rate": {
+          "rows": 477,
+          "positives": 281,
+          "prevalence": 0.589098532494759,
+          "average_precision": 0.6004876522991378,
+          "roc_auc": 0.5757771079962234,
+          "review_capacity_fraction": 0.1,
+          "review_count": 48,
+          "precision_at_capacity": 0.5625,
+          "recall_at_capacity": 0.09608540925266904
+        },
+        "historical_low_review": {
+          "rows": 477,
+          "positives": 281,
+          "prevalence": 0.589098532494759,
+          "average_precision": 0.6111418396668822,
+          "roc_auc": 0.5806431113370615,
+          "review_capacity_fraction": 0.1,
+          "review_count": 48,
+          "precision_at_capacity": 0.5416666666666666,
+          "recall_at_capacity": 0.09252669039145907
+        },
+        "training_prevalence": {
+          "rows": 477,
+          "positives": 281,
+          "prevalence": 0.589098532494759,
+          "average_precision": 0.589098532494759,
+          "roc_auc": 0.5,
+          "review_capacity_fraction": 0.1,
+          "review_count": 48,
+          "precision_at_capacity": 0.5208333333333334,
+          "recall_at_capacity": 0.08896797153024912
+        }
+      },
+      "logistic_ap_uncertainty": {
+        "method": "seller-cluster percentile bootstrap; conditional on this historical period",
+        "seed": 42,
+        "requested_repetitions": 500,
+        "valid_repetitions": 500,
+        "unique_sellers": 477,
+        "ap_95_percentile_interval": [
+          0.7639134419370435,
+          0.844561239539075
+        ],
+        "limitations": "Not uncertainty over new time periods, missing outcomes or marketplace shifts."
+      }
+    },
+    {
+      "cutoff": "2017-07-01",
+      "train_rows": 338,
+      "latest_training_label_date": "2017-06-29",
+      "train_unique_sellers": 220,
+      "test_unique_sellers": 526,
+      "sellers_with_future_purchases": 980,
+      "evaluated_sellers": 526,
+      "methods": {
+        "fixed_logistic": {
+          "rows": 526,
+          "positives": 303,
+          "prevalence": 0.5760456273764258,
+          "average_precision": 0.8165882597023988,
+          "roc_auc": 0.7507140848614009,
+          "review_capacity_fraction": 0.1,
+          "review_count": 53,
+          "precision_at_capacity": 0.9622641509433962,
+          "recall_at_capacity": 0.16831683168316833
+        },
+        "historical_late_rate": {
+          "rows": 526,
+          "positives": 303,
+          "prevalence": 0.5760456273764258,
+          "average_precision": 0.590199027915805,
+          "roc_auc": 0.5924980390415724,
+          "review_capacity_fraction": 0.1,
+          "review_count": 53,
+          "precision_at_capacity": 0.5283018867924528,
+          "recall_at_capacity": 0.0924092409240924
+        },
+        "historical_low_review": {
+          "rows": 526,
+          "positives": 303,
+          "prevalence": 0.5760456273764258,
+          "average_precision": 0.602318707825652,
+          "roc_auc": 0.5851425949769865,
+          "review_capacity_fraction": 0.1,
+          "review_count": 53,
+          "precision_at_capacity": 0.5283018867924528,
+          "recall_at_capacity": 0.0924092409240924
+        },
+        "training_prevalence": {
+          "rows": 526,
+          "positives": 303,
+          "prevalence": 0.5760456273764258,
+          "average_precision": 0.5760456273764258,
+          "roc_auc": 0.5,
+          "review_capacity_fraction": 0.1,
+          "review_count": 53,
+          "precision_at_capacity": 0.6226415094339622,
+          "recall_at_capacity": 0.10891089108910891
+        }
+      },
+      "logistic_ap_uncertainty": {
+        "method": "seller-cluster percentile bootstrap; conditional on this historical period",
+        "seed": 42,
+        "requested_repetitions": 500,
+        "valid_repetitions": 500,
+        "unique_sellers": 526,
+        "ap_95_percentile_interval": [
+          0.7768768800541878,
+          0.8522502107342045
+        ],
+        "limitations": "Not uncertainty over new time periods, missing outcomes or marketplace shifts."
+      }
+    },
+    {
+      "cutoff": "2017-08-01",
+      "train_rows": 672,
+      "latest_training_label_date": "2017-07-30",
+      "train_unique_sellers": 351,
+      "test_unique_sellers": 565,
+      "sellers_with_future_purchases": 1068,
+      "evaluated_sellers": 565,
+      "methods": {
+        "fixed_logistic": {
+          "rows": 565,
+          "positives": 342,
+          "prevalence": 0.6053097345132743,
+          "average_precision": 0.8438169944159962,
+          "roc_auc": 0.7628825426795689,
+          "review_capacity_fraction": 0.1,
+          "review_count": 57,
+          "precision_at_capacity": 0.9649122807017544,
+          "recall_at_capacity": 0.1608187134502924
+        },
+        "historical_late_rate": {
+          "rows": 565,
+          "positives": 342,
+          "prevalence": 0.6053097345132743,
+          "average_precision": 0.6188524151098893,
+          "roc_auc": 0.5865785540083392,
+          "review_capacity_fraction": 0.1,
+          "review_count": 57,
+          "precision_at_capacity": 0.49122807017543857,
+          "recall_at_capacity": 0.08187134502923976
+        },
+        "historical_low_review": {
+          "rows": 565,
+          "positives": 342,
+          "prevalence": 0.6053097345132743,
+          "average_precision": 0.6358778856474832,
+          "roc_auc": 0.5774788241155954,
+          "review_capacity_fraction": 0.1,
+          "review_count": 57,
+          "precision_at_capacity": 0.5964912280701754,
+          "recall_at_capacity": 0.09941520467836257
+        },
+        "training_prevalence": {
+          "rows": 565,
+          "positives": 342,
+          "prevalence": 0.6053097345132743,
+          "average_precision": 0.6053097345132743,
+          "roc_auc": 0.5,
+          "review_capacity_fraction": 0.1,
+          "review_count": 57,
+          "precision_at_capacity": 0.6666666666666666,
+          "recall_at_capacity": 0.1111111111111111
+        }
+      },
+      "logistic_ap_uncertainty": {
+        "method": "seller-cluster percentile bootstrap; conditional on this historical period",
+        "seed": 42,
+        "requested_repetitions": 500,
+        "valid_repetitions": 500,
+        "unique_sellers": 565,
+        "ap_95_percentile_interval": [
+          0.8082148091568743,
+          0.87545987099726
+        ],
+        "limitations": "Not uncertainty over new time periods, missing outcomes or marketplace shifts."
+      }
+    },
+    {
+      "cutoff": "2017-09-01",
+      "train_rows": 1082,
+      "latest_training_label_date": "2017-08-29",
+      "train_unique_sellers": 444,
+      "test_unique_sellers": 638,
+      "sellers_with_future_purchases": 1208,
+      "evaluated_sellers": 638,
+      "methods": {
+        "fixed_logistic": {
+          "rows": 638,
+          "positives": 408,
+          "prevalence": 0.6394984326018809,
+          "average_precision": 0.8586646349511897,
+          "roc_auc": 0.7692348678601876,
+          "review_capacity_fraction": 0.1,
+          "review_count": 64,
+          "precision_at_capacity": 0.96875,
+          "recall_at_capacity": 0.15196078431372548
+        },
+        "historical_late_rate": {
+          "rows": 638,
+          "positives": 408,
+          "prevalence": 0.6394984326018809,
+          "average_precision": 0.6411252245822081,
+          "roc_auc": 0.586498294970162,
+          "review_capacity_fraction": 0.1,
+          "review_count": 64,
+          "precision_at_capacity": 0.484375,
+          "recall_at_capacity": 0.07598039215686274
+        },
+        "historical_low_review": {
+          "rows": 638,
+          "positives": 408,
+          "prevalence": 0.6394984326018809,
+          "average_precision": 0.6640901914501425,
+          "roc_auc": 0.5688565643648764,
+          "review_capacity_fraction": 0.1,
+          "review_count": 64,
+          "precision_at_capacity": 0.609375,
+          "recall_at_capacity": 0.09558823529411764
+        },
+        "training_prevalence": {
+          "rows": 638,
+          "positives": 408,
+          "prevalence": 0.6394984326018809,
+          "average_precision": 0.6394984326018809,
+          "roc_auc": 0.5,
+          "review_capacity_fraction": 0.1,
+          "review_count": 64,
+          "precision_at_capacity": 0.65625,
+          "recall_at_capacity": 0.10294117647058823
+        }
+      },
+      "logistic_ap_uncertainty": {
+        "method": "seller-cluster percentile bootstrap; conditional on this historical period",
+        "seed": 42,
+        "requested_repetitions": 500,
+        "valid_repetitions": 500,
+        "unique_sellers": 638,
+        "ap_95_percentile_interval": [
+          0.8274239250061406,
+          0.8882727412529092
+        ],
+        "limitations": "Not uncertainty over new time periods, missing outcomes or marketplace shifts."
+      }
+    },
+    {
+      "cutoff": "2017-10-01",
+      "train_rows": 1559,
+      "latest_training_label_date": "2017-09-29",
+      "train_unique_sellers": 554,
+      "test_unique_sellers": 702,
+      "sellers_with_future_purchases": 1240,
+      "evaluated_sellers": 702,
+      "methods": {
+        "fixed_logistic": {
+          "rows": 702,
+          "positives": 469,
+          "prevalence": 0.6680911680911681,
+          "average_precision": 0.8717167827886843,
+          "roc_auc": 0.766812778535282,
+          "review_capacity_fraction": 0.1,
+          "review_count": 71,
+          "precision_at_capacity": 0.971830985915493,
+          "recall_at_capacity": 0.14712153518123666
+        },
+        "historical_late_rate": {
+          "rows": 702,
+          "positives": 469,
+          "prevalence": 0.6680911680911681,
+          "average_precision": 0.6817008615727613,
+          "roc_auc": 0.6046972372960457,
+          "review_capacity_fraction": 0.1,
+          "review_count": 71,
+          "precision_at_capacity": 0.6197183098591549,
+          "recall_at_capacity": 0.09381663113006397
+        },
+        "historical_low_review": {
+          "rows": 702,
+          "positives": 469,
+          "prevalence": 0.6680911680911681,
+          "average_precision": 0.7164860269771935,
+          "roc_auc": 0.6164883735827301,
+          "review_capacity_fraction": 0.1,
+          "review_count": 71,
+          "precision_at_capacity": 0.6197183098591549,
+          "recall_at_capacity": 0.09381663113006397
+        },
+        "training_prevalence": {
+          "rows": 702,
+          "positives": 469,
+          "prevalence": 0.6680911680911681,
+          "average_precision": 0.6680911680911681,
+          "roc_auc": 0.5,
+          "review_capacity_fraction": 0.1,
+          "review_count": 71,
+          "precision_at_capacity": 0.6056338028169014,
+          "recall_at_capacity": 0.09168443496801706
+        }
+      },
+      "logistic_ap_uncertainty": {
+        "method": "seller-cluster percentile bootstrap; conditional on this historical period",
+        "seed": 42,
+        "requested_repetitions": 500,
+        "valid_repetitions": 500,
+        "unique_sellers": 702,
+        "ap_95_percentile_interval": [
+          0.8454590781979043,
+          0.8997085924549948
+        ],
+        "limitations": "Not uncertainty over new time periods, missing outcomes or marketplace shifts."
+      }
+    },
+    {
+      "cutoff": "2017-11-01",
+      "train_rows": 2085,
+      "latest_training_label_date": "2017-10-29",
+      "train_unique_sellers": 616,
+      "test_unique_sellers": 758,
+      "sellers_with_future_purchases": 1318,
+      "evaluated_sellers": 758,
+      "methods": {
+        "fixed_logistic": {
+          "rows": 758,
+          "positives": 522,
+          "prevalence": 0.6886543535620053,
+          "average_precision": 0.8724675667833508,
+          "roc_auc": 0.7523865186051042,
+          "review_capacity_fraction": 0.1,
+          "review_count": 76,
+          "precision_at_capacity": 0.9605263157894737,
+          "recall_at_capacity": 0.13984674329501914
+        },
+        "historical_late_rate": {
+          "rows": 758,
+          "positives": 522,
+          "prevalence": 0.6886543535620053,
+          "average_precision": 0.7124633364516677,
+          "roc_auc": 0.6117361516981622,
+          "review_capacity_fraction": 0.1,
+          "review_count": 76,
+          "precision_at_capacity": 0.6710526315789473,
+          "recall_at_capacity": 0.09770114942528736
+        },
+        "historical_low_review": {
+          "rows": 758,
+          "positives": 522,
+          "prevalence": 0.6886543535620053,
+          "average_precision": 0.7353430693774965,
+          "roc_auc": 0.6046374764595104,
+          "review_capacity_fraction": 0.1,
+          "review_count": 76,
+          "precision_at_capacity": 0.7236842105263158,
+          "recall_at_capacity": 0.1053639846743295
+        },
+        "training_prevalence": {
+          "rows": 758,
+          "positives": 522,
+          "prevalence": 0.6886543535620053,
+          "average_precision": 0.6886543535620053,
+          "roc_auc": 0.5,
+          "review_capacity_fraction": 0.1,
+          "review_count": 76,
+          "precision_at_capacity": 0.6052631578947368,
+          "recall_at_capacity": 0.08812260536398467
+        }
+      },
+      "logistic_ap_uncertainty": {
+        "method": "seller-cluster percentile bootstrap; conditional on this historical period",
+        "seed": 42,
+        "requested_repetitions": 500,
+        "valid_repetitions": 500,
+        "unique_sellers": 758,
+        "ap_95_percentile_interval": [
+          0.8475263932822299,
+          0.8987425513676385
+        ],
+        "limitations": "Not uncertainty over new time periods, missing outcomes or marketplace shifts."
+      }
+    },
+    {
+      "cutoff": "2017-12-01",
+      "train_rows": 2650,
+      "latest_training_label_date": "2017-11-29",
+      "train_unique_sellers": 678,
+      "test_unique_sellers": 803,
+      "sellers_with_future_purchases": 1332,
+      "evaluated_sellers": 803,
+      "methods": {
+        "fixed_logistic": {
+          "rows": 803,
+          "positives": 533,
+          "prevalence": 0.663760896637609,
+          "average_precision": 0.8339829875516499,
+          "roc_auc": 0.7044611215342923,
+          "review_capacity_fraction": 0.1,
+          "review_count": 81,
+          "precision_at_capacity": 0.9506172839506173,
+          "recall_at_capacity": 0.14446529080675422
+        },
+        "historical_late_rate": {
+          "rows": 803,
+          "positives": 533,
+          "prevalence": 0.663760896637609,
+          "average_precision": 0.6579128079727177,
+          "roc_auc": 0.5562400111180599,
+          "review_capacity_fraction": 0.1,
+          "review_count": 81,
+          "precision_at_capacity": 0.5432098765432098,
+          "recall_at_capacity": 0.0825515947467167
+        },
+        "historical_low_review": {
+          "rows": 803,
+          "positives": 533,
+          "prevalence": 0.663760896637609,
+          "average_precision": 0.6877279177462001,
+          "roc_auc": 0.5661976235146967,
+          "review_capacity_fraction": 0.1,
+          "review_count": 81,
+          "precision_at_capacity": 0.5802469135802469,
+          "recall_at_capacity": 0.08818011257035648
+        },
+        "training_prevalence": {
+          "rows": 803,
+          "positives": 533,
+          "prevalence": 0.663760896637609,
+          "average_precision": 0.663760896637609,
+          "roc_auc": 0.5,
+          "review_capacity_fraction": 0.1,
+          "review_count": 81,
+          "precision_at_capacity": 0.5555555555555556,
+          "recall_at_capacity": 0.08442776735459662
+        }
+      },
+      "logistic_ap_uncertainty": {
+        "method": "seller-cluster percentile bootstrap; conditional on this historical period",
+        "seed": 42,
+        "requested_repetitions": 500,
+        "valid_repetitions": 500,
+        "unique_sellers": 803,
+        "ap_95_percentile_interval": [
+          0.8007161558550252,
+          0.8637712359222504
+        ],
+        "limitations": "Not uncertainty over new time periods, missing outcomes or marketplace shifts."
+      }
+    },
+    {
+      "cutoff": "2018-01-01",
+      "train_rows": 3288,
+      "latest_training_label_date": "2017-12-30",
+      "train_unique_sellers": 782,
+      "test_unique_sellers": 871,
+      "sellers_with_future_purchases": 1370,
+      "evaluated_sellers": 871,
+      "methods": {
+        "fixed_logistic": {
+          "rows": 871,
+          "positives": 640,
+          "prevalence": 0.7347876004592423,
+          "average_precision": 0.8809907995064289,
+          "roc_auc": 0.7136160714285713,
+          "review_capacity_fraction": 0.1,
+          "review_count": 88,
+          "precision_at_capacity": 0.9772727272727273,
+          "recall_at_capacity": 0.134375
+        },
+        "historical_late_rate": {
+          "rows": 871,
+          "positives": 640,
+          "prevalence": 0.7347876004592423,
+          "average_precision": 0.7410193895054523,
+          "roc_auc": 0.5865665584415585,
+          "review_capacity_fraction": 0.1,
+          "review_count": 88,
+          "precision_at_capacity": 0.6363636363636364,
+          "recall_at_capacity": 0.0875
+        },
+        "historical_low_review": {
+          "rows": 871,
+          "positives": 640,
+          "prevalence": 0.7347876004592423,
+          "average_precision": 0.7426240629430337,
+          "roc_auc": 0.5537506764069264,
+          "review_capacity_fraction": 0.1,
+          "review_count": 88,
+          "precision_at_capacity": 0.625,
+          "recall_at_capacity": 0.0859375
+        },
+        "training_prevalence": {
+          "rows": 871,
+          "positives": 640,
+          "prevalence": 0.7347876004592423,
+          "average_precision": 0.7347876004592423,
+          "roc_auc": 0.5,
+          "review_capacity_fraction": 0.1,
+          "review_count": 88,
+          "precision_at_capacity": 0.7159090909090909,
+          "recall_at_capacity": 0.0984375
+        }
+      },
+      "logistic_ap_uncertainty": {
+        "method": "seller-cluster percentile bootstrap; conditional on this historical period",
+        "seed": 42,
+        "requested_repetitions": 500,
+        "valid_repetitions": 500,
+        "unique_sellers": 871,
+        "ap_95_percentile_interval": [
+          0.8592334065775649,
+          0.9019785349570477
+        ],
+        "limitations": "Not uncertainty over new time periods, missing outcomes or marketplace shifts."
+      }
+    },
+    {
+      "cutoff": "2018-02-01",
+      "train_rows": 3990,
+      "latest_training_label_date": "2018-01-29",
+      "train_unique_sellers": 870,
+      "test_unique_sellers": 916,
+      "sellers_with_future_purchases": 1492,
+      "evaluated_sellers": 916,
+      "methods": {
+        "fixed_logistic": {
+          "rows": 916,
+          "positives": 672,
+          "prevalence": 0.7336244541484717,
+          "average_precision": 0.8854669668376418,
+          "roc_auc": 0.7299046155347384,
+          "review_capacity_fraction": 0.1,
+          "review_count": 92,
+          "precision_at_capacity": 0.9782608695652174,
+          "recall_at_capacity": 0.13392857142857142
+        },
+        "historical_late_rate": {
+          "rows": 916,
+          "positives": 672,
+          "prevalence": 0.7336244541484717,
+          "average_precision": 0.7309824350665501,
+          "roc_auc": 0.5627561475409837,
+          "review_capacity_fraction": 0.1,
+          "review_count": 92,
+          "precision_at_capacity": 0.5978260869565217,
+          "recall_at_capacity": 0.0818452380952381
+        },
+        "historical_low_review": {
+          "rows": 916,
+          "positives": 672,
+          "prevalence": 0.7336244541484717,
+          "average_precision": 0.7260971805383274,
+          "roc_auc": 0.5271150468384075,
+          "review_capacity_fraction": 0.1,
+          "review_count": 92,
+          "precision_at_capacity": 0.6630434782608695,
+          "recall_at_capacity": 0.09077380952380952
+        },
+        "training_prevalence": {
+          "rows": 916,
+          "positives": 672,
+          "prevalence": 0.7336244541484717,
+          "average_precision": 0.7336244541484717,
+          "roc_auc": 0.5,
+          "review_capacity_fraction": 0.1,
+          "review_count": 92,
+          "precision_at_capacity": 0.7065217391304348,
+          "recall_at_capacity": 0.09672619047619048
+        }
+      },
+      "logistic_ap_uncertainty": {
+        "method": "seller-cluster percentile bootstrap; conditional on this historical period",
+        "seed": 42,
+        "requested_repetitions": 500,
+        "valid_repetitions": 500,
+        "unique_sellers": 916,
+        "ap_95_percentile_interval": [
+          0.8597538505994408,
+          0.908600377087657
+        ],
+        "limitations": "Not uncertainty over new time periods, missing outcomes or marketplace shifts."
+      }
+    },
+    {
+      "cutoff": "2018-03-01",
+      "train_rows": 4748,
+      "latest_training_label_date": "2018-03-01",
+      "train_unique_sellers": 960,
+      "test_unique_sellers": 951,
+      "sellers_with_future_purchases": 1559,
+      "evaluated_sellers": 951,
+      "methods": {
+        "fixed_logistic": {
+          "rows": 951,
+          "positives": 669,
+          "prevalence": 0.7034700315457413,
+          "average_precision": 0.8623795518315864,
+          "roc_auc": 0.7236904875488981,
+          "review_capacity_fraction": 0.1,
+          "review_count": 96,
+          "precision_at_capacity": 0.9375,
+          "recall_at_capacity": 0.13452914798206278
+        },
+        "historical_late_rate": {
+          "rows": 951,
+          "positives": 669,
+          "prevalence": 0.7034700315457413,
+          "average_precision": 0.6895923641713703,
+          "roc_auc": 0.5522930381961008,
+          "review_capacity_fraction": 0.1,
+          "review_count": 96,
+          "precision_at_capacity": 0.5520833333333334,
+          "recall_at_capacity": 0.07922272047832586
+        },
+        "historical_low_review": {
+          "rows": 951,
+          "positives": 669,
+          "prevalence": 0.7034700315457413,
+          "average_precision": 0.689812601588405,
+          "roc_auc": 0.51828175852601,
+          "review_capacity_fraction": 0.1,
+          "review_count": 96,
+          "precision_at_capacity": 0.59375,
+          "recall_at_capacity": 0.08520179372197309
+        },
+        "training_prevalence": {
+          "rows": 951,
+          "positives": 669,
+          "prevalence": 0.7034700315457413,
+          "average_precision": 0.7034700315457413,
+          "roc_auc": 0.5,
+          "review_capacity_fraction": 0.1,
+          "review_count": 96,
+          "precision_at_capacity": 0.75,
+          "recall_at_capacity": 0.10762331838565023
+        }
+      },
+      "logistic_ap_uncertainty": {
+        "method": "seller-cluster percentile bootstrap; conditional on this historical period",
+        "seed": 42,
+        "requested_repetitions": 500,
+        "valid_repetitions": 500,
+        "unique_sellers": 951,
+        "ap_95_percentile_interval": [
+          0.8357302206616863,
+          0.8876357611495153
+        ],
+        "limitations": "Not uncertainty over new time periods, missing outcomes or marketplace shifts."
+      }
+    },
+    {
+      "cutoff": "2018-04-01",
+      "train_rows": 5551,
+      "latest_training_label_date": "2018-03-31",
+      "train_unique_sellers": 1051,
+      "test_unique_sellers": 974,
+      "sellers_with_future_purchases": 1667,
+      "evaluated_sellers": 974,
+      "methods": {
+        "fixed_logistic": {
+          "rows": 974,
+          "positives": 573,
+          "prevalence": 0.5882956878850103,
+          "average_precision": 0.8065117209481403,
+          "roc_auc": 0.7324707428636088,
+          "review_capacity_fraction": 0.1,
+          "review_count": 98,
+          "precision_at_capacity": 0.9489795918367347,
+          "recall_at_capacity": 0.16230366492146597
+        },
+        "historical_late_rate": {
+          "rows": 974,
+          "positives": 573,
+          "prevalence": 0.5882956878850103,
+          "average_precision": 0.5900204653866025,
+          "roc_auc": 0.5571237699816776,
+          "review_capacity_fraction": 0.1,
+          "review_count": 98,
+          "precision_at_capacity": 0.4387755102040816,
+          "recall_at_capacity": 0.07504363001745201
+        },
+        "historical_low_review": {
+          "rows": 974,
+          "positives": 573,
+          "prevalence": 0.5882956878850103,
+          "average_precision": 0.5967283132604164,
+          "roc_auc": 0.5531132900732462,
+          "review_capacity_fraction": 0.1,
+          "review_count": 98,
+          "precision_at_capacity": 0.5,
+          "recall_at_capacity": 0.08551483420593368
+        },
+        "training_prevalence": {
+          "rows": 974,
+          "positives": 573,
+          "prevalence": 0.5882956878850103,
+          "average_precision": 0.5882956878850103,
+          "roc_auc": 0.5,
+          "review_capacity_fraction": 0.1,
+          "review_count": 98,
+          "precision_at_capacity": 0.5,
+          "recall_at_capacity": 0.08551483420593368
+        }
+      },
+      "logistic_ap_uncertainty": {
+        "method": "seller-cluster percentile bootstrap; conditional on this historical period",
+        "seed": 42,
+        "requested_repetitions": 500,
+        "valid_repetitions": 500,
+        "unique_sellers": 974,
+        "ap_95_percentile_interval": [
+          0.7735992840175565,
+          0.8376784829279238
+        ],
+        "limitations": "Not uncertainty over new time periods, missing outcomes or marketplace shifts."
+      }
+    }
+  ],
+  "skipped_windows": [
+    {
+      "cutoff": "2017-01-01",
+      "train_rows": 0,
+      "test_rows": 43
+    },
+    {
+      "cutoff": "2017-02-01",
+      "train_rows": 0,
+      "test_rows": 83
+    },
+    {
+      "cutoff": "2017-03-01",
+      "train_rows": 0,
+      "test_rows": 212
+    },
+    {
+      "cutoff": "2017-04-01",
+      "train_rows": 0,
+      "test_rows": 334
+    },
+    {
+      "cutoff": "2017-05-01",
+      "train_rows": 43,
+      "test_rows": 410
+    }
+  ],
+  "latest_window_predictions_count": 974,
+  "limitations": [
+    "Overlapping windows and repeated sellers make pooled row counts non-independent; no pooled significance claim.",
+    "Sellers need two completed historical orders and an observed future delivery; missing and censored outcomes remain excluded.",
+    "Bootstrap intervals quantify seller sampling within each window, not temporal generalization.",
+    "Scores are uncalibrated; no intervention, realized savings, prospective validation or automatic model promotion.",
+    "Constant-score baseline capacity uses seller-ID tie order; expected random precision equals prevalence."
+  ]
+}

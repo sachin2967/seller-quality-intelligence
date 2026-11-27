@@ -51,21 +51,20 @@ def build_temporal_snapshots(
         outcome_observation_end = purchase_window_end + pd.Timedelta(
             days=outcome_grace_days
         )
-        # Restrict history to delivered transactions whose delivery and review
-        # signals were observable by cutoff. Exclude missing completion dates.
+        # Keep transactions with observed delivery by the cutoff. Review fields
+        # are gated separately below so unavailable reviews do not hide orders.
         history = df[
             (df.order_purchase_timestamp < cutoff)
             & df.order_delivered_customer_date.notna()
             & (df.order_delivered_customer_date <= cutoff)
-            & (
-                df.review_answer_timestamp.isna()
-                | (df.review_answer_timestamp <= cutoff)
-            )
         ]
         # A missing review timestamp means its availability time is unknown;
         # retain the transaction but do not expose that review as a feature.
         history = history.copy()
-        history.loc[history.review_answer_timestamp.isna(), "review_score"] = pd.NA
+        history.loc[
+            history.review_answer_timestamp.isna()
+            | (history.review_answer_timestamp > cutoff), "review_score"
+        ] = pd.NA
         future = df[
             (df.order_purchase_timestamp >= cutoff)
             & (df.order_purchase_timestamp < purchase_window_end)

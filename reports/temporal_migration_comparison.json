@@ -1,0 +1,180 @@
+{
+  "measured_on": "2026-11-27",
+  "published_revision": "ccab6b47f65bbffcb0f31efab5abf239528a0732",
+  "raw_sha256": {
+    "olist_orders_dataset.csv": "8df58ef3d2d7e9944010f7beecd9b75367f5588ec6e3c91cec19ae3345ef9ecf",
+    "olist_order_items_dataset.csv": "0bc4d068c4fe38cbb01bd90e8746e3c613fe7b4baef75fab7b0e329701c3e279",
+    "olist_order_reviews_dataset.csv": "012b61c7593e34f51fa614efdf802b9c7056ce6aae5307ddb93236e7cfc797d7",
+    "olist_sellers_dataset.csv": "1f643d2b950373b85735e7794b20986f528d7a000432e7c6f9bcbb44d0846a0e"
+  },
+  "environment": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "python": "3.12.14"
+  },
+  "published_subset": {
+    "temporal": {
+      "dataset_source": "Olist Brazilian E-Commerce public dataset (local raw CSVs); observational, not synthetic",
+      "outcome": "among orders purchased in the next 90 days, any observed delivery >0 days later than estimate or review score <=2; outcomes are observed for up to 30 additional days",
+      "feature_cutoff": "only orders delivered by cutoff; reviews are available only when review answer timestamp <= cutoff; missing review timestamps are treated as unavailable",
+      "cutoff_schedule": [
+        "2017-01-01",
+        "2017-04-01",
+        "2017-06-30",
+        "2017-09-28",
+        "2017-12-27",
+        "2018-03-27"
+      ],
+      "train_cutoff_before": "2018-01-01",
+      "test_cutoff_from": "2018-01-01",
+      "purchase_window_days": 90,
+      "outcome_grace_days": 30,
+      "outcome_observation_days_from_cutoff": 120,
+      "feature_columns": [
+        "orders_lookback",
+        "items_lookback",
+        "gmv_lookback",
+        "avg_price_lookback",
+        "late_rate_lookback",
+        "mean_review_lookback",
+        "transit_days_lookback",
+        "tenure_days_lookback"
+      ],
+      "snapshot_count": 1215,
+      "unique_sellers": 552,
+      "train_rows": 836,
+      "train_positive_rate": 0.44019138755980863,
+      "test_rows": 379,
+      "test_positive_rate": 0.41952506596306066,
+      "test_roc_auc": 0.6687249857061178,
+      "test_average_precision": 0.6321237476456922,
+      "test_brier_score": 0.22683010173669385,
+      "test_prevalence_baseline_average_precision": 0.41952506596306066,
+      "test_unique_sellers": 379,
+      "test_sellers_seen_in_train": 246,
+      "unseen_seller_test_rows": 133,
+      "unseen_seller_metrics": {
+        "positive_rate": 0.3458646616541353,
+        "roc_auc": 0.6349325337331334,
+        "average_precision": 0.468257812101215
+      },
+      "scope": "retrospective temporal observational benchmark; repeated seller snapshots may occur across periods; no causal or ROI claim",
+      "limitations": [
+        "small local Olist extract, finite historical period, and sellers/orders are not independent",
+        "outcomes include only orders with delivery recorded by the end of the 30-day grace period; incomplete or undelivered orders do not contribute, which can bias observed risk",
+        "sellers with no delivered future order in the purchase window are omitted because their outcome is unknown",
+        "review answer timestamp is used to gate historical review features; missing timestamps are treated as unavailable",
+        "no calibration, decision threshold selection, prospective deployment, or intervention evaluation"
+      ]
+    },
+    "retrospective": {
+      "dataset": {
+        "total_sellers": 1104,
+        "at_risk_sellers": 401,
+        "at_risk_prevalence": 0.3632246376811594
+      },
+      "models": {
+        "baseline_logistic_regression": {
+          "roc_auc": 0.7844641262336298,
+          "roc_auc_std": 0.02212186742501364,
+          "pr_auc": 0.7082518878585253,
+          "f1_score": 0.6513400654383636,
+          "brier_score": 0.18597016211433326
+        },
+        "champion_lightgbm": {
+          "roc_auc": 0.8325078661488237,
+          "roc_auc_std": 0.035822509045508905,
+          "pr_auc": 0.8211886536191739,
+          "f1_score": 0.7139812184779789,
+          "brier_score": 0.1456276016618828
+        },
+        "survival_cox_ph": {
+          "concordance_index": 0.7063397810766232,
+          "events_observed": 526,
+          "evaluation_scope": "apparent_in_sample_full_history_association_only"
+        }
+      },
+      "evaluation_scope": {
+        "classification": "stratified_random_seller_cv_on_retrospective_full_history_rule_label",
+        "prospective_prediction_validated": false,
+        "financial_impact_validated": false,
+        "limitations": [
+          "features and labels summarize overlapping seller histories",
+          "cross-validation does not simulate prediction at a historical cutoff",
+          "survival concordance is apparent in-sample and is not a held-out estimate",
+          "no intervention experiment supports causal savings or ROI claims"
+        ]
+      }
+    }
+  },
+  "original_code_full_release": {
+    "command": "make temporal",
+    "temporal": {
+      "dataset_source": "Olist Brazilian E-Commerce public dataset (local raw CSVs); observational, not synthetic",
+      "outcome": "among orders purchased in the next 90 days, any observed delivery >0 days later than estimate or review score <=2; outcomes are observed for up to 30 additional days",
+      "feature_cutoff": "only orders delivered by cutoff; reviews are available only when review answer timestamp <= cutoff; missing review timestamps are treated as unavailable",
+      "cutoff_schedule": [
+        "2017-01-01",
+        "2017-04-01",
+        "2017-06-30",
+        "2017-09-28",
+        "2017-12-27",
+        "2018-03-27"
+      ],
+      "train_cutoff_before": "2018-01-01",
+      "test_cutoff_from": "2018-01-01",
+      "purchase_window_days": 90,
+      "outcome_grace_days": 30,
+      "outcome_observation_days_from_cutoff": 120,
+      "feature_columns": [
+        "orders_lookback",
+        "items_lookback",
+        "gmv_lookback",
+        "avg_price_lookback",
+        "late_rate_lookback",
+        "mean_review_lookback",
+        "transit_days_lookback",
+        "tenure_days_lookback"
+      ],
+      "snapshot_count": 3388,
+      "unique_sellers": 1323,
+      "train_rows": 2435,
+      "train_positive_rate": 0.6710472279260781,
+      "test_rows": 953,
+      "test_positive_rate": 0.6033578174186779,
+      "test_roc_auc": 0.7376443524269611,
+      "test_average_precision": 0.8123292160078128,
+      "test_brier_score": 0.20582479313818344,
+      "test_prevalence_baseline_average_precision": 0.6033578174186779,
+      "test_unique_sellers": 953,
+      "test_sellers_seen_in_train": 732,
+      "unseen_seller_test_rows": 221,
+      "unseen_seller_metrics": {
+        "positive_rate": 0.5384615384615384,
+        "roc_auc": 0.6816608996539792,
+        "average_precision": 0.7467127719148157
+      },
+      "scope": "retrospective temporal observational benchmark; repeated seller snapshots may occur across periods; no causal or ROI claim",
+      "limitations": [
+        "small local Olist extract, finite historical period, and sellers/orders are not independent",
+        "outcomes include only orders with delivery recorded by the end of the 30-day grace period; incomplete or undelivered orders do not contribute, which can bias observed risk",
+        "sellers with no delivered future order in the purchase window are omitted because their outcome is unknown",
+        "review answer timestamp is used to gate historical review features; missing timestamps are treated as unavailable",
+        "no calibration, decision threshold selection, prospective deployment, or intervention evaluation"
+      ]
+    }
+  },
+  "fixed_code_full_release": {
+    "temporal_command": "make temporal",
+    "retrospective_command": "make train",
+    "rolling_command": "python scripts/evaluate_rolling.py",
+    "temporal_report": "temporal_benchmark_report.json",
+    "retrospective_report": "benchmark_report.json",
+    "rolling_report": "full_rolling_benchmark_report.json"
+  },
+  "interpretation": [
+    "The published extract and complete release have different coverage and prevalence.",
+    "The original and fixed temporal code ran from the same verified full release and the same schedule. Their comparison isolates the combined availability and training-label changes, while evaluated cohorts can change.",
+    "The retrospective training code did not change. Its reported comparison uses the published extract and complete release, so it illustrates dataset and runtime differences rather than the temporal fix."
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "dataset": "Brazilian E-Commerce Public Dataset by Olist",
+  "kaggle_ref": "olistbr/brazilian-ecommerce",
+  "dataset_version": 2,
+  "source_url": "https://www.kaggle.com/api/v1/datasets/download/olistbr/brazilian-ecommerce?datasetVersionNumber=2",
+  "source_page": "https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce",
+  "license_observed": "CC BY-NC-SA 4.0",
+  "license_metadata_source": "https://www.kaggle.com/api/v1/datasets/list?search=olistbr%2Fbrazilian-ecommerce",
+  "retrieved_at_utc": "2026-11-22T13:27:01.557649+00:00",
+  "archive_sha256": "967e41e04fc306fe604e2a693f488995a8b41e5047418f8a5c8e4abd6deca784",
+  "files": {
+    "olist_orders_dataset.csv": {
+      "rows": 99441,
+      "bytes": 17654914,
+      "sha256": "8df58ef3d2d7e9944010f7beecd9b75367f5588ec6e3c91cec19ae3345ef9ecf"
+    },
+    "olist_order_items_dataset.csv": {
+      "rows": 112650,
+      "bytes": 15438671,
+      "sha256": "0bc4d068c4fe38cbb01bd90e8746e3c613fe7b4baef75fab7b0e329701c3e279"
+    },
+    "olist_order_reviews_dataset.csv": {
+      "rows": 99224,
+      "bytes": 14451670,
+      "sha256": "012b61c7593e34f51fa614efdf802b9c7056ce6aae5307ddb93236e7cfc797d7"
+    },
+    "olist_sellers_dataset.csv": {
+      "rows": 3095,
+      "bytes": 174703,
+      "sha256": "1f643d2b950373b85735e7794b20986f528d7a000432e7c6f9bcbb44d0846a0e"
+    }
+  },
+  "local_directory": "data/raw/official_v2",
+  "integrity_scope": "Observed local hashes and known release row counts; no publisher-signed checksum was provided.",
+  "redistribution": "Raw archive/CSVs remain ignored by Git; original subset imports are preserved. Respect the dataset's attribution, noncommercial and share-alike terms."
+}

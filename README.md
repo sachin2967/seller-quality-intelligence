@@ -15,11 +15,12 @@ associations, and a diagnostic FastAPI/Streamlit demo.
 
 ## Highlights
 
-- **Point-in-time snapshots:** features use only orders delivered by each cutoff, and
-  review features only when the review-answer timestamp is at or before the cutoff.
-  Outcomes cover orders purchased in the next 90 days, observed for up to 30 more days.
-- **Temporal holdout:** six cutoffs, training snapshots before 2018-01-01, holdout at
-  2018-03-27, plus a separate score for sellers never seen in training.
+- **Point-in-time snapshots:** retain orders delivered by the cutoff, and mask reviews
+  with missing or later answer timestamps. Train only on snapshots whose purchase and
+  outcome-observation windows have closed by the evaluation cutoff.
+- **Temporal holdout and rolling validation:** the single holdout uses 2018-03-27,
+  with an additional breakdown for sellers absent from training. The rolling study uses
+  monthly cutoffs and a fixed review capacity.
 - **Honest comparison:** average precision is reported against prevalence, and the older
   random-seller CV and in-sample Cox results are labeled as non-predictive.
 - **Failure-aware serving:** artifacts are published together, missing or invalid
@@ -30,32 +31,81 @@ associations, and a diagnostic FastAPI/Streamlit demo.
 
 ### Temporal observational benchmark (`temporal_benchmark_report.json`)
 
-1,215 seller snapshots from 552 sellers; 836 training rows, 379 holdout rows.
+The full-release rerun uses the same 6 scheduled cutoffs
+as the original benchmark and holds out 2018-03-27. The class-weighted logistic
+regression uses 8 lookback features. Labels cover purchases over the next
+90 days and outcomes observed through an additional 30-day grace period.
 
-| Holdout | Rows | Prevalence | ROC-AUC | Average precision |
-| --- | ---: | ---: | ---: | ---: |
-| Latest cutoff (2018-03-27), all sellers | 379 | 0.420 | **0.669** | **0.632** |
-| Sellers absent from training | 133 | 0.346 | 0.635 | 0.468 |
+| Metric | Previously published extract | Original code, full release | Fixed code, full release |
+| --- | ---: | ---: | ---: |
+| Seller snapshots | 1,215 | 3,388 | 3,432 |
+| Unique sellers across snapshots | 552 | 1,323 | 1,340 |
+| Training rows | 836 | 2,435 | 1,604 |
+| Holdout rows | 379 | 953 | 961 |
+| Holdout prevalence | 0.4195 | 0.6034 | 0.6035 |
+| Holdout ROC-AUC | 0.6687 | 0.7376 | 0.7370 |
+| Holdout average precision | 0.6321 | 0.8123 | 0.8119 |
+| Holdout Brier score | 0.2268 | 0.2058 | 0.2079 |
+| Unseen-seller holdout rows | 133 | 221 | 450 |
+| Unseen-seller prevalence | 0.3459 | 0.5385 | 0.5711 |
+| Unseen-seller ROC-AUC | 0.6349 | 0.6817 | 0.7017 |
+| Unseen-seller average precision | 0.4683 | 0.7467 | 0.7866 |
 
-The model is class-weighted logistic regression on eight lookback features. Brier
-score on the holdout is 0.227. Rows repeat sellers across periods, incomplete future
-deliveries are excluded (which can bias observed risk), and no uncertainty interval,
-calibration, threshold or intervention effect is claimed.
+The published extract differs in coverage and prevalence from the full Olist release.
+The two full-release columns use identical CSVs. Retaining delivered orders with
+unavailable reviews changes eligible snapshots. Requiring mature training labels
+reduces the training set and changes which sellers count as unseen.
+The [comparison report](reports/temporal_migration_comparison.json) records the
+source hashes, commands, and original-code rerun.
+
+Rows repeat sellers across periods, and excluded incomplete future deliveries can
+bias observed risk. The single holdout has no uncertainty interval, calibration,
+tuned decision threshold, or intervention result.
 
 ### Retrospective full-history benchmark (`benchmark_report.json`)
 
-1,104 sellers, 401 labeled at-risk (36.3%). Stratified 5-fold random-seller CV on a
-rule-derived label (mean review < 3.8, late-delivery rate > 15%, or cancellation
-rate > 5%).
+1,104 → 2,462 sellers and
+401 → 843 labeled at-risk
+(36.3% → 34.2%) from the published
+extract to the full release. Stratified 5-fold seller CV uses the same rule-derived
+label (mean review < 3.8, late-delivery rate > 15%, or cancellation rate > 5%).
 
-| Model | ROC-AUC | PR-AUC | F1 | Brier |
+| Model | ROC-AUC, old → new | PR-AUC, old → new | F1, old → new | Brier, old → new |
 | --- | ---: | ---: | ---: | ---: |
-| Logistic regression | 0.784 | 0.708 | 0.651 | 0.186 |
-| LightGBM | 0.833 | 0.821 | 0.714 | 0.146 |
+| Logistic regression | 0.784 → 0.793 | 0.708 → 0.699 | 0.651 → 0.637 | 0.186 → 0.182 |
+| LightGBM | 0.833 → 0.826 | 0.821 → 0.769 | 0.714 → 0.659 | 0.146 → 0.156 |
 
-These numbers reconstruct a contemporaneous rule from related operational features
-over overlapping histories. They are **not** evidence of early warning. The Cox
-concordance (0.706, 526 events) is apparent in-sample and descriptive only.
+The retrospective training code is unchanged by the temporal fix. These results
+measure reconstruction of a contemporaneous rule from related operational features
+over overlapping histories and establish no early-warning effect. Cox concordance
+(0.706 → 0.666,
+526 → 1,613 events) is apparent
+in-sample and descriptive only.
+
+### Rolling validation
+
+The [rolling report](full_rolling_benchmark_report.json) records 11
+eligible monthly windows. On the latest cutoff (2018-04-01),
+974 sellers were evaluated. Training labels matured by
+each cutoff, and review capacity was fixed at 10%.
+
+| Method | Average precision | Precision at capacity | Recall at capacity |
+| --- | ---: | ---: | ---: |
+| Fixed logistic regression | 0.8065 | 0.9490 | 0.1623 |
+| Historical late-delivery rate | 0.5900 | 0.4388 | 0.0750 |
+| Historical low review score | 0.5967 | 0.5000 | 0.0855 |
+| Constant training-prevalence score | 0.5883 | 0.5000 | 0.0855 |
+
+The latest logistic-regression AP seller-cluster bootstrap interval is
+0.7736–0.8377 at 95%. It describes uncertainty within that window. Overlapping
+periods and repeated sellers preclude a pooled significance claim or inference to new
+periods. The historical data has already been inspected.
+
+```bash
+make train
+make temporal
+python scripts/evaluate_rolling.py
+```
 
 ## Architecture
 
@@ -89,7 +139,7 @@ make train       # retrospective CV, Cox fit, model artifacts, benchmark_report.
 make temporal    # point-in-time benchmark, temporal_benchmark_report.json
 make api         # http://127.0.0.1:8000/docs
 make dashboard   # Streamlit demo
-make test        # lint + 23 offline tests
+make test        # lint and offline tests
 ```
 
 The tests create their own temporary fixtures and need no Olist files; `make train`
@@ -121,20 +171,21 @@ access controls. See [docs/OPERATIONS.md](docs/OPERATIONS.md).
 | `src/features/builder.py` | Seller aggregates and retrospective label |
 | `src/evaluation/temporal.py` | Point-in-time snapshot construction |
 | `src/models/` | Logistic regression, LightGBM, Cox model, explanations |
-| `scripts/` | `train_and_evaluate.py`, `evaluate_temporal.py` |
+| `scripts/` | Retrospective, single-holdout, and rolling evaluation |
 | `api/`, `streamlit_app/` | Local demonstration interfaces |
-| `tests/` | 23 offline tests: loader, features, temporal gating, models, API |
+| `tests/` | Offline tests for loader, features, temporal gating, validation, models, and API |
 
 ## Limitations
 
-- One small historical extract, six cutoffs, and a single holdout cutoff.
+- One finite historical marketplace release. The single holdout and overlapping
+  rolling windows cannot establish generalization to future periods.
 - The rule-based label is contemporaneous and partly encoded by related features.
 - Random seller folds do not test temporal or marketplace-shift generalization.
 - Cox hazard ratios are descriptive associations, not held-out performance or causal effects.
 - Recommendations are heuristic playbooks; no intervention was measured, so there is
   no ROI claim.
-- The next valid step is repeated temporal holdouts with censoring treatment,
-  calibration, survival diagnostics and intervention evidence.
+- Broader independent time periods, censoring treatment, calibration, survival
+  diagnostics and intervention evidence remain outstanding.
 
 ## Related projects
 
